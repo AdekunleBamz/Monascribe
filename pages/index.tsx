@@ -145,7 +145,8 @@ export default function Home() {
       <Head>
         <title>MonaScribe — MetaMask Smart Accounts on Monad</title>
         <meta name="description" content="MonaScribe brings frictionless, smart‑account‑powered subscriptions and gated content to Monad with MetaMask." />
-        <link rel="icon" href="/favicon.ico" />
+        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+        <link rel="alternate icon" href="/favicon.ico" />
       </Head>
 
       <main className="main">
@@ -165,7 +166,7 @@ export default function Home() {
             
             <div className="wallet-connection">
               <ConnectButton
-                account={connectedAccount}
+                account={connectedAccount ?? undefined}
                 onConnect={handleWalletConnect}
                 onDisconnect={handleWalletDisconnect}
               />
@@ -181,14 +182,7 @@ export default function Home() {
                     </div>
                   </>
                 )}
-                {connectedAccount.smartAccountType === 'smart-account' && (
-                  <>
-                    ✨ Smart Account Ready • 🔄 Advanced Features • 🛡️ Secure Transactions
-                    <div className="smart-account-notice">
-                      🚀 MetaMask Smart Account: Will use standard transactions if bundler unavailable
-                    </div>
-                  </>
-                )}
+                {connectedAccount.smartAccountType === 'smart-account' && null}
               </div>
             )}
           </div>

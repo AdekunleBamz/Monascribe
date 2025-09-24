@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#667eea"/>
+      <stop offset="50%" stop-color="#7c3aed"/>
+      <stop offset="100%" stop-color="#f59e0b"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feOffset dy="8" in="SourceAlpha" result="off"/>
+      <feGaussianBlur in="off" stdDeviation="12" result="blur"/>
+      <feColorMatrix in="blur" type="matrix" values="0 0 0 0 0   0 0 0 0 0   0 0 0 0 0   0 0 0 0.25 0"/>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Rounded tile background -->
+  <rect x="32" y="32" width="448" height="448" rx="112" fill="url(#bg)" filter="url(#shadow)"/>
+
+  <!-- Monogram: M S -->
+  <g fill="#fff" transform="translate(112,128)">
+    <!-- M -->
+    <path d="M16 256 V24 h40 l48 88 48-88 h40 V256 h-40 V116 l-48 84 h-0.8 l-48-84 V256 z"/>
+    <!-- S -->
+    <path d="M236 84 c0-35 28-60 76-60 26 0 46 6 65 17 v36 c-18-10-36-16-55-16 -24 0-38 9-38 23 0 37 105 20 105 92 0 36-30 62-84 62 -27 0-54-7-72-18 v-36 c20 12 44 20 68 20 27 0 44-10 44-26 0-36-99-20-99-94z" transform="translate(-20,16) scale(0.7)"/>
+  </g>
+</svg>
+
+
