@@ -7,6 +7,7 @@ import { createSmartAccount, subscribeWithSmartAccount, cancelSubscription } fro
 import { WalletConnector } from '../lib/walletConfig'
 import { publicClient } from '../lib/config'
 import ContentModal from '../components/ContentModal'
+import ConfirmModal from '../components/ConfirmModal'
 
 interface ConnectedAccount {
   address: string
@@ -26,6 +27,7 @@ export default function Home() {
   const [subPlanId, setSubPlanId] = useState<number | null>(null)
   const [contentOpen, setContentOpen] = useState(false)
   const [contentData, setContentData] = useState<any>(null)
+  const [confirmOpen, setConfirmOpen] = useState(false)
 
   const handleWalletConnect = async (address: string, connector: WalletConnector) => {
     setIsLoading(true)
@@ -253,6 +255,20 @@ export default function Home() {
             resources={contentData?.resources}
             explorerUrl={contentData?.explorerUrl}
           />
+          <ConfirmModal
+            open={confirmOpen}
+            onClose={() => setConfirmOpen(false)}
+            title="Cancel Subscription?"
+            message={(
+              <div>
+                <p>Are you sure you want to cancel your subscription? This will immediately stop access to gated content.</p>
+                <p style={{ marginTop: 8, color: '#6b7280' }}>Refund policy: On-chain payments are final; unused time is not automatically refunded.</p>
+              </div>
+            )}
+            confirmText="Yes, cancel"
+            cancelText="Keep subscription"
+            onConfirm={async () => { setConfirmOpen(false); await handleCancel(); }}
+          />
           {connectedAccount && subActive && subPlanId && (
             <div className="gated-access">
               <h2>Your Subscription</h2>
@@ -279,7 +295,7 @@ export default function Home() {
               </button>
               <button
                 className="cancel-btn"
-                onClick={handleCancel}
+                onClick={() => setConfirmOpen(true)}
                 style={{ marginLeft: 12 }}
               >
                 Cancel Subscription
