@@ -14,11 +14,11 @@ function getEnv(key: string): string | undefined {
 
 export async function getSubscriptionStatusIndexed(subscriber: `0x${string}`): Promise<IndexedSubscriptionStatus | null> {
   try {
-    const url = getEnv('NEXT_PUBLIC_ENVOI_GRAPHQL_URL') || getEnv('ENVOI_GRAPHQL_URL')
+    const url = getEnv('NEXT_PUBLIC_ENVIO_GRAPHQL_URL') || getEnv('ENVIO_GRAPHQL_URL')
     if (!url) return null
 
-    const subscribedEntity = getEnv('NEXT_PUBLIC_ENVOI_SUBSCRIBED_ENTITY') || 'SubscriptionService_Subscribed'
-    const cancelledEntity = getEnv('NEXT_PUBLIC_ENVOI_CANCELLED_ENTITY') || 'SubscriptionService_SubscriptionCancelled'
+    const subscribedEntity = getEnv('NEXT_PUBLIC_ENVIO_SUBSCRIBED_ENTITY') || 'SubscriptionService_Subscribed'
+    const cancelledEntity = getEnv('NEXT_PUBLIC_ENVIO_CANCELLED_ENTITY') || 'SubscriptionService_SubscriptionCancelled'
 
     // Build a flexible GraphQL query. If schema differs, this will fail and we return null.
     const query = `

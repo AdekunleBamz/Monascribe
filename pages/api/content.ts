@@ -16,7 +16,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Prefer Envio indexer if configured, else fall back to direct RPC
     const indexed = await getSubscriptionStatusIndexed(userAddress)
     let isActive = false
-    let onChainPlanId: number | bigint = 0n
+    let onChainPlanId: number = 0
     if (indexed) {
       isActive = indexed.isActive
       onChainPlanId = indexed.planId
@@ -28,7 +28,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         args: [userAddress]
       }) as unknown as [boolean, bigint, bigint]
       isActive = result[0]
-      onChainPlanId = result[2]
+      onChainPlanId = Number(result[2])
     }
 
     if (!isActive || Number(onChainPlanId) !== parsedPlanId) {
