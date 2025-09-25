@@ -3,7 +3,7 @@ import Head from 'next/head'
 import SubscriptionCard from '../components/SubscriptionCard'
 import ConnectButton from '../components/ConnectButton'
 import { SUBSCRIPTION_PLANS, SUBSCRIPTION_CONTRACT_ADDRESS, SUBSCRIPTION_CONTRACT_ABI } from '../lib/subscriptionContract'
-import { createSmartAccount, subscribeWithSmartAccount } from '../lib/smartAccount'
+import { createSmartAccount, subscribeWithSmartAccount, cancelSubscription } from '../lib/smartAccount'
 import { WalletConnector } from '../lib/walletConfig'
 import { publicClient } from '../lib/config'
 import ContentModal from '../components/ContentModal'
@@ -140,6 +140,49 @@ export default function Home() {
     }
   }
 
+  const handleCancel = async () => {
+    if (!smartAccount || !connectedAccount) {
+      setStatus('Please connect your wallet first')
+      return
+    }
+
+    setStatus('Processing cancellation...')
+    try {
+      const txHash = await cancelSubscription(
+        smartAccount,
+        SUBSCRIPTION_CONTRACT_ADDRESS as `0x${string}`
+      )
+      setLastTxHash(txHash)
+      setStatus('✅ Cancellation submitted. Waiting for confirmation...')
+      await publicClient.waitForTransactionReceipt({ hash: txHash as `0x${string}` })
+
+      try {
+        const result = await publicClient.readContract({
+          address: SUBSCRIPTION_CONTRACT_ADDRESS as `0x${string}`,
+          abi: SUBSCRIPTION_CONTRACT_ABI as any,
+          functionName: 'getSubscriptionStatus',
+          args: [connectedAccount.address as `0x${string}`]
+        }) as unknown as [boolean, bigint, bigint]
+
+        const [isActive, expiresAt, planOnChain] = result
+        setSubActive(isActive)
+        setSubExpires(Number(expiresAt))
+        setSubPlanId(Number(planOnChain) || null)
+
+        setStatus('✅ Subscription cancelled')
+      } catch (readErr) {
+        setStatus('✅ Cancellation confirmed. Please refresh if status did not update.')
+      }
+    } catch (error: any) {
+      console.error('Cancellation failed:', error)
+      if (error.message?.includes('User denied')) {
+        setStatus('❌ Cancellation rejected in wallet')
+      } else {
+        setStatus('❌ Cancellation failed. Please try again.')
+      }
+    }
+  }
+
   return (
     <div className="container">
       <Head>
@@ -233,6 +276,13 @@ export default function Home() {
                 }}
               >
                 Access Content
+              </button>
+              <button
+                className="cancel-btn"
+                onClick={handleCancel}
+                style={{ marginLeft: 12 }}
+              >
+                Cancel Subscription
               </button>
             </div>
           )}
@@ -436,6 +486,17 @@ export default function Home() {
 
         .onchain-status {
           margin-bottom: 2rem;
+        }
+
+        .cancel-btn {
+          margin-top: 8px;
+          padding: 10px 16px;
+          background: #7f1d1d;
+          color: white;
+          border-radius: 8px;
+          border: none;
+          font-weight: 600;
+          cursor: pointer;
         }
 
         .status-grid {

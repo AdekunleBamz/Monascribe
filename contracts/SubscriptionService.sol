@@ -27,6 +27,7 @@ contract SubscriptionService {
     
     event Subscribed(address indexed subscriber, uint256 planId, uint256 expiresAt);
     event PlanCreated(uint256 planId, string title, uint256 price, uint256 duration);
+    event SubscriptionCancelled(address indexed subscriber, uint256 planId, uint256 cancelledAt);
     
     modifier onlyOwner() {
         require(msg.sender == owner, "Only owner");
@@ -88,6 +89,17 @@ contract SubscriptionService {
         if (msg.value > plans[sub.planId].price) {
             payable(msg.sender).transfer(msg.value - plans[sub.planId].price);
         }
+    }
+    
+    function cancelSubscription() external {
+        Subscription storage sub = subscriptions[msg.sender];
+        require(sub.active, "No active subscription");
+        
+        uint256 planId = sub.planId;
+        sub.active = false;
+        sub.expiresAt = block.timestamp; // immediately expire
+        
+        emit SubscriptionCancelled(msg.sender, planId, block.timestamp);
     }
     
     function getSubscriptionStatus(address subscriber) external view returns (bool isActive, uint256 expiresAt, uint256 planId) {

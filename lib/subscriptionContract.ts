@@ -12,6 +12,13 @@ export const SUBSCRIPTION_CONTRACT_ABI = [
   },
   {
     "inputs": [],
+    "name": "cancelSubscription",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "renewSubscription", 
     "outputs": [],
     "stateMutability": "payable",
@@ -45,8 +52,8 @@ export const SUBSCRIPTION_CONTRACT_ABI = [
   }
 ] as const
 
-// Deployed contract address on Monad Testnet
-export const SUBSCRIPTION_CONTRACT_ADDRESS = "0x279ada6ccd24f83acb09b691605f0e2c5e8f4a1c" as const
+// Deployed contract address on Monad Testnet (updated after adding cancel)
+export const SUBSCRIPTION_CONTRACT_ADDRESS = "0x74193a1a4ff15ec8a9c3e11fd040e2c62bdce7fb" as const
 
 export interface SubscriptionPlan {
   id: number

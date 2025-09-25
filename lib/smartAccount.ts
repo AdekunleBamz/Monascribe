@@ -4,7 +4,7 @@ import {
   getDeleGatorEnvironment 
 } from '@metamask/delegation-toolkit'
 import { privateKeyToAccount, generatePrivateKey } from 'viem/accounts'
-import { createWalletClient, http, encodeFunctionData } from 'viem'
+import { createWalletClient, http, encodeFunctionData, type Address } from 'viem'
 import { publicClient, bundlerClient, monadTestnet } from './config'
 import { SUBSCRIPTION_CONTRACT_ABI } from './subscriptionContract'
 
@@ -25,7 +25,7 @@ export async function createSmartAccount() {
       throw new Error('No accounts found. Please connect your MetaMask wallet.')
     }
 
-    const userAddress = accounts[0]
+    const userAddress = accounts[0] as Address
     console.log('Connected to MetaMask:', userAddress)
 
     // Switch to Monad Testnet if not already connected
@@ -62,6 +62,7 @@ export async function createSmartAccount() {
     const walletClient = createWalletClient({
       chain: monadTestnet,
       transport: http(),
+      account: userAddress,
     })
 
     // Try to create MetaMask Smart Account
@@ -120,7 +121,7 @@ export async function createSmartAccount() {
 
 export async function subscribeWithSmartAccount(
   smartAccount: any,
-  contractAddress: string,
+  contractAddress: Address,
   planId: number,
   price: string
 ) {
@@ -209,6 +210,77 @@ export async function subscribeWithSmartAccount(
     throw new Error('Unknown account type')
   } catch (error) {
     console.error('Error processing subscription:', error)
+    throw error
+  }
+}
+
+export async function cancelSubscription(
+  smartAccount: any,
+  contractAddress: Address
+) {
+  try {
+    console.log('Processing cancel subscription...')
+
+    const userAddress = (smartAccount.eoaAddress || smartAccount.address || smartAccount.getAddress()) as `0x${string}`
+
+    const transactionParameters = {
+      from: userAddress,
+      to: contractAddress,
+      data: encodeFunctionData({
+        abi: SUBSCRIPTION_CONTRACT_ABI as any,
+        functionName: 'cancelSubscription',
+        args: [],
+      }),
+    }
+
+    if (smartAccount.type === 'standard-account') {
+      console.log('Sending standard MetaMask transaction...', transactionParameters)
+      const hash = await smartAccount.ethereum.request({
+        method: 'eth_sendTransaction',
+        params: [transactionParameters],
+      })
+      console.log('Standard transaction sent:', hash)
+      return hash
+    }
+
+    if (smartAccount.type === 'smart-account') {
+      try {
+        console.log('Attempting user operation via MetaMask Smart Account...')
+        const userOperationHash = await bundlerClient.sendUserOperation({
+          account: smartAccount,
+          calls: [
+            {
+              to: contractAddress,
+              data: encodeFunctionData({
+                abi: SUBSCRIPTION_CONTRACT_ABI as any,
+                functionName: 'cancelSubscription',
+                args: [],
+              }),
+            }
+          ],
+          maxFeePerGas: BigInt('20000000000'),
+          maxPriorityFeePerGas: BigInt('2000000000'),
+        })
+        console.log('User operation sent:', userOperationHash)
+        return userOperationHash
+      } catch (bundlerError: any) {
+        if (bundlerError.message?.includes('eth_estimateUserOperationGas') || bundlerError.message?.includes('Method not found')) {
+          console.log('Bundler not supported on this network, falling back to standard transaction...')
+          console.log('Fallback transaction params:', transactionParameters)
+          const hash = await smartAccount.ethereum.request({
+            method: 'eth_sendTransaction',
+            params: [transactionParameters],
+          })
+          console.log('Fallback standard transaction sent:', hash)
+          return hash
+        }
+        throw bundlerError
+      }
+    }
+
+    throw new Error('Unknown account type')
+  } catch (error) {
+    console.error('Error cancelling subscription:', error)
     throw error
   }
 }
