@@ -137,8 +137,8 @@ class MockDataGenerator {
 
       const tokenInKey = this.getRandomToken();
       const tokenOutKey = this.getRandomToken(tokenInKey);
-      const tokenIn = this.tokens[tokenInKey];
-      const tokenOut = this.tokens[tokenOutKey];
+      const tokenIn = this.tokens[tokenInKey as keyof typeof this.tokens];
+      const tokenOut = this.tokens[tokenOutKey as keyof typeof this.tokens];
 
       const baseAmount = isSmartMoney 
         ? (10000 + Math.random() * 100000) // $10K - $110K
