@@ -730,8 +730,7 @@ export async function generateWeeklyAlpha(issueNumber: number): Promise<any> {
       issueNumber,
       content: alphaContent,
       metrics: enhancedMetrics,
-      marketIntelligence: marketIntel,
-      insights: insights
+      marketIntelligence: marketIntel
     }
   } catch (error: any) {
     console.error('Error generating enhanced weekly alpha:', error)
