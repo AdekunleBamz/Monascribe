@@ -502,15 +502,15 @@ export async function generateSmartMoneyAnalytics(): Promise<any> {
       whaleCount: activeWhales,
       totalActiveUsers: topSmartMoney.length,
       totalVolume: totalVolume,
-      avgScore: topSmartMoney.reduce((sum, w) => sum + w.score, 0) / topSmartMoney.length,
+      avgScore: topSmartMoney.reduce((sum: number, w: any) => sum + w.score, 0) / topSmartMoney.length,
       // Enhanced metrics for display
       summary: {
         activeWhales,
         smartMoneyFlow: `$${(totalVolume / 1000000).toFixed(1)}M`,
-        avgScore: Math.round(topSmartMoney.reduce((sum, w) => sum + w.score, 0) / topSmartMoney.length),
+        avgScore: Math.round(topSmartMoney.reduce((sum: number, w: any) => sum + w.score, 0) / topSmartMoney.length),
         marketSentiment: mockMarketIntel.socialSentiment.overall,
         sentimentScore: mockMarketIntel.socialSentiment.score,
-        defiTvl: mockMarketIntel.defiProtocols.reduce((sum, p) => sum + p.tvl, 0),
+        defiTvl: mockMarketIntel.defiProtocols.reduce((sum: number, p: any) => sum + p.tvl, 0),
         whaleAlertLevel: activeWhales > 10 ? 'high' : activeWhales > 5 ? 'medium' : 'low',
         fearGreedIndex: 45 + Math.random() * 30, // Mock Fear & Greed index
         networkUtilization: networkMetrics.networkStats.utilization,
