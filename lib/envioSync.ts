@@ -361,7 +361,7 @@ export async function generateSmartMoneyAnalytics(): Promise<any> {
         { $limit: 20 }
       ]).toArray()
       
-      topSmartMoney = topSmartMoneyData.map(wallet => ({
+      topSmartMoney = topSmartMoneyData.map((wallet: any) => ({
         wallet: `${wallet.address.slice(0, 6)}...${wallet.address.slice(-4)}`,
         action: wallet.tags?.includes('subscriber') ? 'Subscribe + Trade' : 'Trade',
         score: wallet.score?.totalScore || 0,
@@ -387,7 +387,7 @@ export async function generateSmartMoneyAnalytics(): Promise<any> {
         { $limit: 10 }
       ]).toArray()
       
-      largeTransfers = largeTransferData.map(transfer => ({
+      largeTransfers = largeTransferData.map((transfer: any) => ({
         wallet: `${transfer._id.slice(0, 6)}...${transfer._id.slice(-4)}`,
         action: 'Large Transfer',
         amount: Math.round(transfer.totalValue),
@@ -422,7 +422,7 @@ export async function generateSmartMoneyAnalytics(): Promise<any> {
       
     } else {
       // Use enhanced mock data
-      topSmartMoney = mockSmartWallets.slice(0, 15).map(wallet => ({
+      topSmartMoney = mockSmartWallets.slice(0, 15).map((wallet: any) => ({
         wallet: `${wallet.address.slice(0, 6)}...${wallet.address.slice(-4)}`,
         action: wallet.tags.includes('subscriber') ? 'Subscribe + Trade' : 'Trade',
         score: wallet.score,
@@ -436,7 +436,7 @@ export async function generateSmartMoneyAnalytics(): Promise<any> {
       largeTransfers = mockSmartWallets
         .filter(w => w.isWhale)
         .slice(0, 8)
-        .map(wallet => ({
+        .map((wallet: any) => ({
           wallet: `${wallet.address.slice(0, 6)}...${wallet.address.slice(-4)}`,
           action: 'Large Transfer',
           amount: Math.round(parseFloat(wallet.totalVolume) * 0.15), // 15% of total volume
