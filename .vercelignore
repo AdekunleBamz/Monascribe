@@ -1,0 +1,5 @@
+monascribe-indexer/
+scripts/dev-startup.js
+scripts/fix-docker.sh
+*.md
+.cursor/
