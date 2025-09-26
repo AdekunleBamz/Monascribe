@@ -365,7 +365,7 @@ class MockDataGenerator {
       'arbitrager': 60,
       'degen': 20
     };
-    score += patternBonus[pattern] || 0;
+    score += patternBonus[pattern as keyof typeof patternBonus] || 0;
     
     return Math.round(score);
   }
