@@ -474,11 +474,11 @@ export async function generateSmartMoneyAnalytics(): Promise<any> {
       ]
     }
     
-    const activeWhales = topSmartMoney.filter(w => w.activity === 'Whale').length
+    const activeWhales = topSmartMoney.filter((w: any) => w.activity === 'Whale').length
     const totalSmartMoney = mockSmartWallets.length
     const totalLargeTransfers = largeTransfers.length
     const totalDexTrades = mockDexTrades.length
-    const totalVolume = topSmartMoney.reduce((sum, w) => sum + (w.volume || 0), 0)
+    const totalVolume = topSmartMoney.reduce((sum: number, w: any) => sum + (w.volume || 0), 0)
     
     // Enhanced insights with market intelligence
     const insights = [
