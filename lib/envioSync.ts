@@ -653,7 +653,7 @@ export async function generateWeeklyAlpha(issueNumber: number): Promise<any> {
       
       <h3>🔍 Smart Money Insights</h3>
       <ul>
-        ${enhancedAlpha.executiveSummary.keyTakeaways.map(insight => `<li>${insight}</li>`).join('')}
+        ${enhancedAlpha.executiveSummary.keyTakeaways.map((insight: any) => `<li>${insight}</li>`).join('')}
       </ul>
       
       <h3>🎯 Whale Intelligence</h3>
@@ -672,7 +672,7 @@ export async function generateWeeklyAlpha(issueNumber: number): Promise<any> {
 
       <h3>🚀 Actionable Insights</h3>
       <ul>
-        ${enhancedAlpha.actionableInsights.map(insight => `<li><strong>${insight.type.toUpperCase()}:</strong> ${insight.action} (${insight.confidence} confidence)</li>`).join('')}
+        ${enhancedAlpha.actionableInsights.map((insight: any) => `<li><strong>${insight.type.toUpperCase()}:</strong> ${insight.action} (${insight.confidence} confidence)</li>`).join('')}
       </ul>
 
       <h3>📰 Market Sentiment & Trends</h3>
