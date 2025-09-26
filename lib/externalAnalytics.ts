@@ -293,7 +293,7 @@ export async function storeMarketIntelligence(intelligence: MarketIntelligence):
     const count = await marketData.countDocuments()
     if (count > 100) {
       const oldRecords = await marketData.find().sort({ timestamp: 1 }).limit(count - 100).toArray()
-      const oldIds = oldRecords.map(record => record._id)
+      const oldIds = oldRecords.map((record: any) => record._id)
       await marketData.deleteMany({ _id: { $in: oldIds } })
     }
   } catch (error) {
