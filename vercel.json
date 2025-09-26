@@ -7,7 +7,6 @@
     }
   },
   "env": {
-    "MONGODB_URI": "@mongodb-uri",
     "MONGODB_DB": "monascribe_analytics",
     "NEXT_PUBLIC_ENVIO_GRAPHQL_URL": "https://indexer.bigdevenergy.link/2a12346/v1/graphql"
   }
