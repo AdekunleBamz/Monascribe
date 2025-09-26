@@ -719,7 +719,6 @@ export async function generateWeeklyAlpha(issueNumber: number): Promise<any> {
           issueNumber,
           metrics: enhancedMetrics,
           marketIntelligence: marketIntel,
-          insights: insights,
           generatedAt: new Date(),
           planAccess: [1, 2, 3] // All plans can access alpha
         }
