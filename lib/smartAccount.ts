@@ -7,22 +7,39 @@ import { privateKeyToAccount, generatePrivateKey } from 'viem/accounts'
 import { createWalletClient, http, encodeFunctionData, type Address } from 'viem'
 import { publicClient, bundlerClient, monadTestnet } from './config'
 import { SUBSCRIPTION_CONTRACT_ABI } from './subscriptionContract'
+import { getMetaMaskProvider, detectWalletConflicts, reportWalletError } from './walletConfig'
 
 export async function createSmartAccount() {
   try {
-    // Check if MetaMask is installed
-    if (typeof window === 'undefined' || !(window as any).ethereum) {
-      throw new Error('MetaMask not detected. Please install MetaMask to continue.')
+    // Detect wallet conflicts first
+    const walletConflicts = detectWalletConflicts()
+    
+    if (walletConflicts.hasConflicts) {
+      console.warn('🚨 Wallet Extension Conflicts Detected:', walletConflicts)
+      console.warn('Detected wallets:', walletConflicts.detectedWallets)
+      console.warn('Recommendations:', walletConflicts.recommendations)
     }
 
-    const ethereum = (window as any).ethereum
+    // Get the specific MetaMask provider
+    const metaMaskProvider = getMetaMaskProvider()
+    
+    if (!metaMaskProvider) {
+      const error = new Error('MetaMask not detected. Please install MetaMask to continue.')
+      reportWalletError(error, 'SmartAccount Creation')
+      throw error
+    }
+
+    // Use the specific MetaMask provider instead of window.ethereum
+    const ethereum = metaMaskProvider
     
     // Request account access
     console.log('Requesting MetaMask connection...')
     const accounts = await ethereum.request({ method: 'eth_requestAccounts' })
     
     if (!accounts || accounts.length === 0) {
-      throw new Error('No accounts found. Please connect your MetaMask wallet.')
+      const error = new Error('No accounts found. Please connect your MetaMask wallet.')
+      reportWalletError(error, 'Account Access')
+      throw error
     }
 
     const userAddress = accounts[0] as Address
@@ -68,6 +85,11 @@ export async function createSmartAccount() {
     // Try to create MetaMask Smart Account
     try {
       console.log('Attempting to create MetaMask Smart Account...')
+      
+      if (walletConflicts.hasConflicts) {
+        console.warn('⚠️ Smart Account creation may fail due to wallet conflicts')
+      }
+      
       const smartAccount = await toMetaMaskSmartAccount({
         client: publicClient,
         implementation: Implementation.Hybrid,
@@ -76,7 +98,7 @@ export async function createSmartAccount() {
         signer: { walletClient },
       })
       
-      console.log('MetaMask Smart Account created successfully')
+      console.log('✅ MetaMask Smart Account created successfully')
       
       // Note: Smart Account created but will fall back to standard transactions
       // if Monad doesn't support ERC-4337 bundler operations
@@ -91,10 +113,18 @@ export async function createSmartAccount() {
         }, 
         account: { address: userAddress },
         isReal: true,
-        type: 'smart-account'
+        type: 'smart-account',
+        walletConflicts: walletConflicts.hasConflicts ? walletConflicts : undefined
       }
     } catch (smartAccountError) {
-      console.log('MetaMask Smart Account not available, using standard MetaMask account')
+      console.log('⚠️ MetaMask Smart Account not available, using standard MetaMask account')
+      
+      if (walletConflicts.hasConflicts) {
+        console.warn('Smart Account creation failed likely due to wallet conflicts:', walletConflicts.detectedWallets)
+        reportWalletError(smartAccountError, 'Smart Account Creation with Conflicts')
+      } else {
+        reportWalletError(smartAccountError, 'Smart Account Creation')
+      }
       
       // Use standard MetaMask account
       return {
@@ -109,7 +139,8 @@ export async function createSmartAccount() {
         },
         account: { address: userAddress },
         isReal: true,
-        type: 'standard-account'
+        type: 'standard-account',
+        walletConflicts: walletConflicts.hasConflicts ? walletConflicts : undefined
       }
     }
   } catch (error) {

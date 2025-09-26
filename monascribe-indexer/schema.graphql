@@ -1,0 +1,92 @@
+type SubscriptionService_PlanCreated {
+  id: ID!
+  planId: BigInt!
+  title: String!
+  price: BigInt!
+  duration: BigInt!
+}
+
+type SubscriptionService_Subscribed {
+  id: ID!
+  subscriber: String!
+  planId: BigInt!
+  expiresAt: BigInt!
+  blockNumber: BigInt!
+  transactionHash: String!
+  timestamp: BigInt!
+}
+
+type SubscriptionService_SubscriptionCancelled {
+  id: ID!
+  subscriber: String!
+  planId: BigInt!
+  cancelledAt: BigInt!
+  blockNumber: BigInt!
+  transactionHash: String!
+  timestamp: BigInt!
+}
+
+type TokenTransfer {
+  id: ID!
+  token: String!
+  from: String!
+  to: String!
+  value: BigInt!
+  blockNumber: BigInt!
+  transactionHash: String!
+  timestamp: BigInt!
+  isLargeTransfer: Boolean!
+  valueUSD: BigInt
+}
+
+type LargeTransaction {
+  id: ID!
+  from: String!
+  to: String!
+  value: BigInt!
+  gasUsed: BigInt!
+  gasPrice: BigInt!
+  blockNumber: BigInt!
+  transactionHash: String!
+  timestamp: BigInt!
+  methodId: String
+  contractInteraction: Boolean!
+}
+
+type DEXTrade {
+  id: ID!
+  trader: String!
+  tokenIn: String!
+  tokenOut: String!
+  amountIn: BigInt!
+  amountOut: BigInt!
+  dexProtocol: String!
+  blockNumber: BigInt!
+  transactionHash: String!
+  timestamp: BigInt!
+  isSmartMoney: Boolean
+}
+
+type SmartMoneyWallet {
+  id: ID!
+  address: String!
+  totalVolume: BigInt!
+  transactionCount: BigInt!
+  firstSeen: BigInt!
+  lastActive: BigInt!
+  scoreComponents_id: String!
+  isWhale: Boolean!
+  tags: [String!]!
+}
+
+type SmartMoneyScore {
+  id: ID!
+  wallet_id: String!
+  totalScore: BigInt!
+  volumeScore: BigInt!
+  frequencyScore: BigInt!
+  diversityScore: BigInt!
+  timingScore: BigInt!
+  lastUpdated: BigInt!
+}
+

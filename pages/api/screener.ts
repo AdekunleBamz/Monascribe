@@ -1,0 +1,180 @@
+import type { NextApiRequest, NextApiResponse } from 'next'
+import { getSubscriptionStatusIndexed } from '../../lib/indexer'
+import { publicClient } from '../../lib/config'
+import { SUBSCRIPTION_CONTRACT_ABI, SUBSCRIPTION_CONTRACT_ADDRESS } from '../../lib/subscriptionContract'
+import { getDb } from '../../lib/db'
+import { syncSubscriptionEvents, generateSmartMoneyAnalytics } from '../../lib/envioSync'
+
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  try {
+    const db = await getDb()
+    const { address, refresh } = req.query
+    const user = String(address || '') as `0x${string}`
+    if (!user) return res.status(400).send('Missing address')
+
+    // Check access: plan >= 2 (Premium or VIP)
+    let isActive = false
+    let planId = 0
+    const indexed = await getSubscriptionStatusIndexed(user)
+    if (indexed) {
+      isActive = indexed.isActive
+      planId = indexed.planId
+    } else {
+      const result = await publicClient.readContract({
+        address: SUBSCRIPTION_CONTRACT_ADDRESS as `0x${string}`,
+        abi: SUBSCRIPTION_CONTRACT_ABI as any,
+        functionName: 'getSubscriptionStatus',
+        args: [user]
+      }) as unknown as [boolean, bigint, bigint]
+      isActive = result[0]
+      planId = Number(result[2])
+    }
+    if (!isActive || planId < 2) return res.status(403).send('Access denied: Screener requires Premium or VIP subscription')
+
+    // Try cache first (last 10 minutes) unless refresh requested
+    if (!refresh) {
+      const cache = await db.collection('screener_cache').findOne({ key: 'weekly' } as any)
+      const now = Date.now()
+      if (cache && typeof cache.ts === 'number' && now - cache.ts < 10 * 60 * 1000) {
+        return res.status(200).json(cache.data)
+      }
+    }
+
+    // Sync latest events from Envio → MongoDB
+    try {
+      const syncResult = await syncSubscriptionEvents()
+      console.log(`📊 Synced ${syncResult.synced} events from Envio`)
+      if (syncResult.errors.length > 0) {
+        console.warn('Sync warnings:', syncResult.errors)
+      }
+    } catch (syncError) {
+      console.warn('🔄 Envio sync failed, using cached MongoDB data:', syncError)
+    }
+
+    // Generate real smart money analytics from MongoDB
+    const analytics = await generateSmartMoneyAnalytics()
+    
+    // Generate comprehensive market intelligence
+    const { generateMarketIntelligence, generateMarketInsights } = await import('../../lib/externalAnalytics')
+    const marketIntel = await generateMarketIntelligence()
+    const insights = await generateMarketInsights(marketIntel)
+
+    // Transform to screener format with enhanced smart money data and market intelligence
+    const data = {
+      timestamp: analytics.timestamp,
+      insights: [
+        ...analytics.insights,
+        ...insights.keyInsights.slice(0, 2), // Add top market insights
+        `Market sentiment: ${marketIntel.sentiment.overallSentiment} (${marketIntel.sentiment.sentimentScore.toFixed(0)} score)`,
+        `Whale alert level: ${marketIntel.whaleIntelligence.alertLevel}`
+      ],
+      tokenFlows: [
+        // Include smart money wallets
+        ...analytics.topSmartMoney.map((wallet: any, idx: number) => ({
+          wallet: wallet.wallet,
+          action: wallet.action,
+          token: 'Smart Money',
+          amount: wallet.score,
+          activity: wallet.activity,
+          rank: idx + 1,
+          tags: wallet.tags
+        })),
+        // Include large transfers
+        ...analytics.largeTransfers.map((transfer: any, idx: number) => ({
+          wallet: transfer.wallet,
+          action: transfer.action,
+          token: 'Large Transfer',
+          amount: transfer.amount,
+          activity: transfer.activity,
+          rank: analytics.topSmartMoney.length + idx + 1,
+          tokenCount: transfer.tokenCount
+        })),
+        // Include whale intelligence
+        ...marketIntel.whaleIntelligence.largeTransactions.slice(0, 3).map((tx: any, idx: number) => ({
+          wallet: `${tx.from.slice(0, 6)}...${tx.from.slice(-4)}`,
+          action: 'Whale Movement',
+          token: tx.token,
+          amount: Math.round(tx.value),
+          activity: tx.impact === 'high' ? 'High Impact' : 'Medium Impact',
+          rank: analytics.topSmartMoney.length + analytics.largeTransfers.length + idx + 1,
+          timestamp: tx.timestamp
+        }))
+      ],
+      hotContracts: [
+        { 
+          title: 'Smart Money Tracking', 
+          insight: `${analytics.whaleCount} whale wallets active (${marketIntel.whaleIntelligence.alertLevel} alert level)` 
+        },
+        { 
+          title: 'DeFi Ecosystem', 
+          insight: `$${(marketIntel.defiMetrics.totalValueLocked / 1000000).toFixed(1)}M TVL across ${marketIntel.defiMetrics.topProtocols.length} protocols` 
+        },
+        { 
+          title: 'Market Sentiment', 
+          insight: `${marketIntel.sentiment.overallSentiment.toUpperCase()} sentiment with ${marketIntel.sentiment.socialMentions} mentions` 
+        },
+        { 
+          title: 'Large Transfers', 
+          insight: `${analytics.largeTransfers.length + marketIntel.whaleIntelligence.largeTransactions.length} high-value movements detected` 
+        },
+        { 
+          title: 'MonaScribe Subscriptions', 
+          insight: `${analytics.totalActiveUsers} active subscribers tracked` 
+        },
+      ],
+      summary: {
+        activeUsers: analytics.totalActiveUsers,
+        whaleCount: analytics.whaleCount,
+        topPlan: analytics.planPopularity[0]?.planName || 'Basic Newsletter',
+        smartMoneyScore: analytics.topSmartMoney[0]?.score || 0,
+        marketSentiment: marketIntel.sentiment.overallSentiment,
+        sentimentScore: marketIntel.sentiment.sentimentScore,
+        defiTvl: marketIntel.defiMetrics.totalValueLocked,
+        whaleAlertLevel: marketIntel.whaleIntelligence.alertLevel,
+        fearGreedIndex: marketIntel.macroIndicators.fearGreedIndex,
+        dataSource: process.env.NEXT_PUBLIC_ENVIO_GRAPHQL_URL ? 'Envio + External Intelligence' : 'MongoDB + Market Intelligence',
+        note: `Comprehensive smart money & market intelligence from multiple sources`
+      },
+      planPopularity: analytics.planPopularity,
+      dexActivity: [
+        ...analytics.dexActivity,
+        ...marketIntel.defiMetrics.topProtocols.map(protocol => ({
+          _id: protocol.name,
+          trades: Math.floor(protocol.volume / 10000), // Estimate trades from volume
+          uniqueTraders: Math.floor(protocol.volume / 50000), // Estimate unique traders
+          uniqueTraderCount: Math.floor(protocol.volume / 50000),
+          totalVolumeIn: protocol.volume
+        }))
+      ],
+      whaleActivity: analytics.whaleActivity,
+      marketIntelligence: {
+        sentiment: marketIntel.sentiment,
+        whaleMovements: marketIntel.whaleIntelligence.whaleMovements,
+        defiMetrics: marketIntel.defiMetrics,
+        macroIndicators: marketIntel.macroIndicators,
+        insights: insights,
+        newsEvents: marketIntel.sentiment.newsEvents
+      },
+      networkInfo: {
+        chain: 'Monad Testnet',
+        blockTime: '400ms',
+        tps: '10,000+',
+        finality: '800ms'
+      }
+    }
+
+    const now = Date.now()
+    await db.collection('screener_cache').updateOne(
+      { key: 'weekly' } as any,
+      { $set: { key: 'weekly', ts: now, data } },
+      { upsert: true }
+    )
+
+    return res.status(200).json(data)
+  } catch (e: any) {
+    console.error('Screener API error:', e)
+    return res.status(500).send(e?.message || 'Internal error')
+  }
+}
+
+

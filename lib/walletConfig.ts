@@ -60,6 +60,84 @@ export class WalletConnectionError extends Error {
   }
 }
 
+// Enhanced wallet detection and conflict resolution
+export function detectWalletConflicts(): {
+  hasConflicts: boolean
+  detectedWallets: string[]
+  recommendations: string[]
+} {
+  const detectedWallets: string[] = []
+  const recommendations: string[] = []
+  
+  if (typeof window === 'undefined') {
+    return { hasConflicts: false, detectedWallets, recommendations }
+  }
+
+  // Check for MetaMask
+  if ((window as any).ethereum?.isMetaMask) {
+    detectedWallets.push('MetaMask')
+  }
+  
+  // Check for other common wallets
+  if ((window as any).ethereum?.isCoinbaseWallet) {
+    detectedWallets.push('Coinbase Wallet')
+  }
+  
+  if ((window as any).ethereum?.isRabby) {
+    detectedWallets.push('Rabby Wallet')
+  }
+  
+  if ((window as any).ethereum?.isTrust) {
+    detectedWallets.push('Trust Wallet')
+  }
+  
+  if ((window as any).ethereum?.isTokenPocket) {
+    detectedWallets.push('TokenPocket')
+  }
+  
+  // Check for multiple providers
+  if ((window as any).ethereum?.providers && Array.isArray((window as any).ethereum.providers)) {
+    detectedWallets.push(`Multiple providers (${(window as any).ethereum.providers.length})`)
+  }
+
+  const hasConflicts = detectedWallets.length > 1
+
+  if (hasConflicts) {
+    recommendations.push('Disable other wallet extensions temporarily')
+    recommendations.push('Use only MetaMask for Smart Account features')
+    recommendations.push('Check browser extension settings')
+  }
+
+  return { hasConflicts, detectedWallets, recommendations }
+}
+
+// Safe MetaMask detection
+export function getMetaMaskProvider() {
+  if (typeof window === 'undefined') return null
+  
+  // If there are multiple providers, find MetaMask specifically
+  if ((window as any).ethereum?.providers && Array.isArray((window as any).ethereum.providers)) {
+    return (window as any).ethereum.providers.find((provider: any) => provider.isMetaMask) || null
+  }
+  
+  // Single provider case
+  if ((window as any).ethereum?.isMetaMask) {
+    return (window as any).ethereum
+  }
+  
+  return null
+}
+
+// Enhanced error reporting
+export function reportWalletError(error: any, context: string) {
+  console.error(`[${context}] Wallet Error:`, {
+    message: error.message,
+    code: error.code,
+    stack: error.stack,
+    walletConflicts: detectWalletConflicts()
+  })
+}
+
 export async function detectWallets(): Promise<WalletConnector[]> {
   if (typeof window === 'undefined') return SUPPORTED_WALLETS
   

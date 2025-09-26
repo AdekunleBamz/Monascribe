@@ -1,0 +1,32 @@
+# yaml-language-server: $schema=./node_modules/envio/evm.schema.json
+name: envio-indexer
+networks:
+- id: 10143
+  start_block: 0
+  contracts:
+  - name: SubscriptionService
+    address:
+    - 0x74193a1a4fF15eC8A9c3e11fd040E2c62BDCE7Fb
+    handler: src/EventHandlers.ts
+    events:
+    - event: PlanCreated(uint256 planId, string title, uint256 price, uint256 duration)
+    - event: Subscribed(address indexed subscriber, uint256 planId, uint256 expiresAt)
+      field_selection:
+        transaction_fields:
+          - hash
+    - event: SubscriptionCancelled(address indexed subscriber, uint256 planId, uint256 cancelledAt)
+      field_selection:
+        transaction_fields:
+          - hash
+  
+  # TODO: Add specific ERC20 and DEX contract addresses when available on Monad testnet
+  # For now, focusing on SubscriptionService to avoid indexer errors
+  # 
+  # Future enhancement: Add these contracts when deployed on Monad:
+  # - ERC20 tokens (USDC, WETH, etc.) for transfer tracking
+  # - DEX contracts (UniswapV2/V3 style) for swap tracking
+  # - This will enable full smart money detection and analytics
+
+    
+unordered_multichain_mode: true
+preload_handlers: true
