@@ -518,77 +518,77 @@ export async function generateSmartMoneyAnalytics(): Promise<any> {
     
     // Get real data from MongoDB
     let topSmartMoney, largeTransfers, dexActivity, whaleActivity
-    const topSmartMoneyData = await smartMoneyWallets.aggregate([
-      { $match: { lastActive: { $gte: sevenDaysAgo } } },
-      { $lookup: {
-        from: 'smart_money_scores',
-        localField: 'address',
-        foreignField: 'wallet_id',
-        as: 'score'
-      }},
-      { $unwind: { path: '$score', preserveNullAndEmptyArrays: true } },
-      { $sort: { 'score.totalScore': -1 } },
-      { $limit: 20 }
-    ]).toArray()
+      const topSmartMoneyData = await smartMoneyWallets.aggregate([
+        { $match: { lastActive: { $gte: sevenDaysAgo } } },
+        { $lookup: {
+          from: 'smart_money_scores',
+          localField: 'address',
+          foreignField: 'wallet_id',
+          as: 'score'
+        }},
+        { $unwind: { path: '$score', preserveNullAndEmptyArrays: true } },
+        { $sort: { 'score.totalScore': -1 } },
+        { $limit: 20 }
+      ]).toArray()
       
-    topSmartMoney = topSmartMoneyData.map((wallet: any) => ({
-      wallet: `${wallet.address.slice(0, 6)}...${wallet.address.slice(-4)}`,
-      action: wallet.tags?.includes('subscriber') ? 'Subscribe + Trade' : 'Trade',
-      score: wallet.score?.totalScore || 0,
-      activity: wallet.isWhale ? 'Whale' : 'Active',
-      tags: wallet.tags || [],
-      lastSeen: wallet.lastActive
-    }))
+      topSmartMoney = topSmartMoneyData.map((wallet: any) => ({
+        wallet: `${wallet.address.slice(0, 6)}...${wallet.address.slice(-4)}`,
+        action: wallet.tags?.includes('subscriber') ? 'Subscribe + Trade' : 'Trade',
+        score: wallet.score?.totalScore || 0,
+        activity: wallet.isWhale ? 'Whale' : 'Active',
+        tags: wallet.tags || [],
+        lastSeen: wallet.lastActive
+      }))
       
-    const largeTransferData = await tokenTransfers.aggregate([
-      { $match: { timestamp: { $gte: sevenDaysAgo }, isLargeTransfer: true } },
-      { $group: {
-        _id: '$from',
-        transferCount: { $sum: 1 },
-        totalValue: { $sum: { $toDouble: '$value' } },
-        tokens: { $addToSet: '$token' }
-      }},
-      { $addFields: {
-        tokenCount: { $size: '$tokens' },
-        avgTransferSize: { $divide: ['$totalValue', '$transferCount'] }
-      }},
-      { $sort: { totalValue: -1 } },
-      { $limit: 10 }
-    ]).toArray()
+      const largeTransferData = await tokenTransfers.aggregate([
+        { $match: { timestamp: { $gte: sevenDaysAgo }, isLargeTransfer: true } },
+        { $group: {
+          _id: '$from',
+          transferCount: { $sum: 1 },
+          totalValue: { $sum: { $toDouble: '$value' } },
+          tokens: { $addToSet: '$token' }
+        }},
+        { $addFields: {
+          tokenCount: { $size: '$tokens' },
+          avgTransferSize: { $divide: ['$totalValue', '$transferCount'] }
+        }},
+        { $sort: { totalValue: -1 } },
+        { $limit: 10 }
+      ]).toArray()
       
-    largeTransfers = largeTransferData.map((transfer: any) => ({
-      wallet: `${transfer._id.slice(0, 6)}...${transfer._id.slice(-4)}`,
-      action: 'Large Transfer',
-      amount: Math.round(transfer.totalValue),
-      activity: `${transfer.transferCount} transfers`,
-      tokenCount: transfer.tokenCount
-    }))
+      largeTransfers = largeTransferData.map((transfer: any) => ({
+        wallet: `${transfer._id.slice(0, 6)}...${transfer._id.slice(-4)}`,
+        action: 'Large Transfer',
+        amount: Math.round(transfer.totalValue),
+        activity: `${transfer.transferCount} transfers`,
+        tokenCount: transfer.tokenCount
+      }))
       
-    dexActivity = await dexTrades.aggregate([
-      { $match: { timestamp: { $gte: sevenDaysAgo } } },
-      { $group: {
-        _id: '$dexProtocol',
-        trades: { $sum: 1 },
-        uniqueTraders: { $addToSet: '$trader' },
-        totalVolumeIn: { $sum: { $toDouble: '$amountIn' } }
-      }},
-      { $addFields: {
-        uniqueTraderCount: { $size: '$uniqueTraders' }
-      }},
-      { $sort: { trades: -1 } }
-    ]).toArray()
+      dexActivity = await dexTrades.aggregate([
+        { $match: { timestamp: { $gte: sevenDaysAgo } } },
+        { $group: {
+          _id: '$dexProtocol',
+          trades: { $sum: 1 },
+          uniqueTraders: { $addToSet: '$trader' },
+          totalVolumeIn: { $sum: { $toDouble: '$amountIn' } }
+        }},
+        { $addFields: {
+          uniqueTraderCount: { $size: '$uniqueTraders' }
+        }},
+        { $sort: { trades: -1 } }
+      ]).toArray()
       
-    whaleActivity = await smartMoneyWallets.aggregate([
-      { $match: { isWhale: true, lastActive: { $gte: sevenDaysAgo } } },
-      { $group: {
-        _id: '$tags',
-        count: { $sum: 1 },
-        totalVolume: { $sum: { $toDouble: '$totalVolume' } },
-        avgTransactionCount: { $avg: '$transactionCount' }
-      }},
-      { $sort: { count: -1 } }
-    ]).toArray()
-    
+      whaleActivity = await smartMoneyWallets.aggregate([
+        { $match: { isWhale: true, lastActive: { $gte: sevenDaysAgo } } },
+        { $group: {
+          _id: '$tags',
+          count: { $sum: 1 },
+          totalVolume: { $sum: { $toDouble: '$totalVolume' } },
+          avgTransactionCount: { $avg: '$transactionCount' }
+        }},
+        { $sort: { count: -1 } }
+      ]).toArray()
+      
     const activeWhales = topSmartMoney.filter((w: any) => w.activity === 'Whale').length;
     const totalSmartMoney = topSmartMoney.length;
     const totalLargeTransfers = largeTransfers.length;
@@ -600,9 +600,9 @@ export async function generateSmartMoneyAnalytics(): Promise<any> {
       `${activeWhales} whale wallets active this week (${totalSmartMoney} total tracked)`,
       `$${(totalVolume / 1000000).toFixed(1)}M in smart money flow`,
       `${totalLargeTransfers} large token transfers detected`,
-      `${totalDexTrades} DEX trades across ${dexActivity.length} protocols`,
+      `${totalDexTrades} DEX trades across ${dexActivity?.length || 0} protocols`,
       `Network TPS: ${networkMetrics.networkStats.tps.toFixed(1)}`,
-      `Top DEX: ${dexActivity[0]?._id || 'No activity'} with ${dexActivity[0]?.trades || 0} trades`
+      `Top DEX: ${dexActivity?.[0]?._id || 'No activity'} with ${dexActivity?.[0]?.trades || 0} trades`
     ]
 
     return {
@@ -793,8 +793,8 @@ export async function generateWeeklyAlpha(issueNumber: number): Promise<any> {
       
       <h3>🏗️ DeFi Infrastructure Update</h3>
       <div style="background: #ecfdf5; padding: 12px; border-radius: 6px; margin: 16px 0;">
-        <p><strong>DEX Activity:</strong> ${analytics.dexActivity.length} protocols active</p>
-        <p><strong>Top DEX:</strong> ${analytics.dexActivity[0]?._id || 'No activity'} with ${analytics.dexActivity[0]?.trades || 0} trades</p>
+        <p><strong>DEX Activity:</strong> ${analytics.dexActivity?.length || 0} protocols active</p>
+        <p><strong>Top DEX:</strong> ${analytics.dexActivity?.[0]?._id || 'No activity'} with ${analytics.dexActivity?.[0]?.trades || 0} trades</p>
         <p><strong>Monad Advantage:</strong> Sub-400ms block times enabling new DeFi primitives</p>
       </div>
       
