@@ -13,8 +13,8 @@ import { getSubscriptionStatusIndexed } from './indexer'
 import { monadMetrics, type MonadNetworkMetrics } from './monadMetrics'
 // Removed mock data generator import - using only real on-chain data
 
-// Use Next.js API proxy instead of direct Envio connection
-const ENVIO_GRAPHQL_URL = '/api/graphql'
+// Skip GraphQL - indexer syncs directly to MongoDB in production
+const ENVIO_GRAPHQL_URL = process.env.NEXT_PUBLIC_APP_ENV === 'production' ? null : '/api/graphql'
 
 // Generate real alpha content using only on-chain data
 async function generateRealAlphaContent(issueNumber: number, analytics: any): Promise<any> {
@@ -217,9 +217,10 @@ export async function syncSubscriptionEvents(): Promise<{ synced: number; errors
   const errors: string[] = []
   let synced = 0
 
+  // In production, skip GraphQL sync - indexer runs separately and syncs to MongoDB
   if (!ENVIO_GRAPHQL_URL) {
-    errors.push('Envio GraphQL URL not configured')
-    return { synced, errors }
+    console.log('🔄 Production mode: Skipping GraphQL sync, using MongoDB directly')
+    return { synced: 0, errors: [] }
   }
 
   try {

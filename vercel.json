@@ -9,8 +9,6 @@
   "env": {
     "MONGODB_DB": "monascribe_analytics",
     "MONGODB_URI": "mongodb+srv://adebamzzw1_db_user:GSZXxpbNIdVjZSQc@cluster0.fbquz94.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0",
-    "ENVIO_GRAPHQL_URL": "https://monascribe-indexer.onrender.com/v1/graphql",
-    "NEXT_PUBLIC_ENVIO_GRAPHQL_URL": "https://monascribe-indexer.onrender.com/v1/graphql",
     "NEXT_PUBLIC_APP_ENV": "production"
   },
   "build": {
