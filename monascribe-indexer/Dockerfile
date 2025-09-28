@@ -13,6 +13,7 @@ ENV HASURA_GRAPHQL_ROLE=admin
 ENV HASURA_GRAPHQL_ADMIN_SECRET=testing
 ENV ENVIO_INDEXER_PORT=4000
 ENV NODE_ENV=production
+ENV ENVIO_HASURA=true
 
 # Copy package files
 COPY package.json pnpm-lock.yaml ./
