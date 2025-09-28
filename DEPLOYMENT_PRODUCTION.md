@@ -39,27 +39,27 @@ Smart Contract   GraphQL API            Analytics      User Interface
 - **Dockerfile Path**: `./monascribe-indexer/Dockerfile`
 - **Plan**: `Starter` (free tier)
 
-### 1.3 Environment Variables
+### 1.3 Databases
 
-Add these environment variables in Render:
+The indexer requires both MongoDB and PostgreSQL databases:
+
+1. **MongoDB**: For application data storage
+2. **PostgreSQL**: For Envio indexer internal operations
+
+Both databases will be automatically created when you deploy using the `render.yaml` configuration.
+
+### 1.4 Environment Variables
+
+The environment variables are automatically configured from the databases. You only need to set:
 
 ```
-MONGODB_URI=mongodb+srv://your-username:your-password@cluster0.mongodb.net/?retryWrites=true&w=majority
-MONGODB_DB=monascribe_analytics
 NODE_ENV=production
 ENVIO_INDEXER_PORT=4000
 HASURA_GRAPHQL_ENDPOINT=http://localhost:4000/v1/metadata
 HASURA_GRAPHQL_ROLE=admin
 HASURA_GRAPHQL_ADMIN_SECRET=testing
 ENVIO_HASURA=true
-
-# PostgreSQL configuration
-ENVIO_PG_HOST=localhost
-ENVIO_PG_PORT=5433
-ENVIO_PG_USER=postgres
-ENVIO_PG_PASSWORD=testing
-ENVIO_PG_DATABASE=envio-dev
-ENVIO_PG_SSL_MODE=false
+ENVIO_PG_SSL_MODE=require
 
 # Throttle configuration
 ENVIO_THROTTLE_CHAIN_METADATA_INTERVAL_MILLIS=500
@@ -68,7 +68,9 @@ ENVIO_THROTTLE_LIVE_METRICS_BENCHMARK_INTERVAL_MILLIS=2000
 ENVIO_THROTTLE_JSON_FILE_BENCHMARK_INTERVAL_MILLIS=5000
 ```
 
-### 1.4 Deploy
+**Note**: Database connection variables (`MONGODB_URI`, `ENVIO_PG_*`) are automatically set from the Render databases.
+
+### 1.5 Deploy
 
 1. Click **"Create Web Service"**
 2. Wait for deployment to complete (5-10 minutes)

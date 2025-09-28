@@ -24,19 +24,29 @@ services:
         value: testing
       - key: ENVIO_HASURA
         value: true
-      # PostgreSQL configuration
+      # PostgreSQL configuration - use Render database
       - key: ENVIO_PG_HOST
-        value: localhost
+        fromDatabase:
+          name: postgres
+          property: host
       - key: ENVIO_PG_PORT
-        value: 5433
+        fromDatabase:
+          name: postgres
+          property: port
       - key: ENVIO_PG_USER
-        value: postgres
+        fromDatabase:
+          name: postgres
+          property: user
       - key: ENVIO_PG_PASSWORD
-        value: testing
+        fromDatabase:
+          name: postgres
+          property: password
       - key: ENVIO_PG_DATABASE
-        value: envio-dev
+        fromDatabase:
+          name: postgres
+          property: database
       - key: ENVIO_PG_SSL_MODE
-        value: false
+        value: require
       # Throttle configuration
       - key: ENVIO_THROTTLE_CHAIN_METADATA_INTERVAL_MILLIS
         value: 500
@@ -52,6 +62,8 @@ services:
     rootDir: monascribe-indexer
 
 databases:
+  - name: postgres
+    plan: starter
   - name: mongodb
     plan: starter
     databaseName: monascribe_analytics
