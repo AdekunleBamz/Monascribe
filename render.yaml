@@ -36,7 +36,7 @@ services:
       - key: ENVIO_PG_DATABASE
         value: envio-dev
       - key: ENVIO_PG_SSL_MODE
-        value: disable
+        value: false
       # Throttle configuration
       - key: ENVIO_THROTTLE_CHAIN_METADATA_INTERVAL_MILLIS
         value: 500
