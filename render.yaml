@@ -56,7 +56,7 @@ services:
         value: 2000
       - key: ENVIO_THROTTLE_JSON_FILE_BENCHMARK_INTERVAL_MILLIS
         value: 5000
-    healthCheckPath: /graphql
+    healthCheckPath: /v1/graphql
     autoDeploy: true
     branch: main
     rootDir: monascribe-indexer
