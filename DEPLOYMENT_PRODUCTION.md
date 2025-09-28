@@ -47,6 +47,10 @@ Add these environment variables in Render:
 MONGODB_URI=mongodb+srv://your-username:your-password@cluster0.mongodb.net/?retryWrites=true&w=majority
 MONGODB_DB=monascribe_analytics
 NODE_ENV=production
+ENVIO_INDEXER_PORT=4000
+HASURA_GRAPHQL_ENDPOINT=http://localhost:4000/v1/metadata
+HASURA_GRAPHQL_ROLE=admin
+HASURA_GRAPHQL_ADMIN_SECRET=testing
 ```
 
 ### 1.4 Deploy

@@ -15,8 +15,14 @@ services:
           property: connectionString
       - key: MONGODB_DB
         value: monascribe_analytics
-      - key: ENVIO_GRAPHQL_URL
-        value: /graphql
+      - key: ENVIO_INDEXER_PORT
+        value: 4000
+      - key: HASURA_GRAPHQL_ENDPOINT
+        value: http://localhost:4000/v1/metadata
+      - key: HASURA_GRAPHQL_ROLE
+        value: admin
+      - key: HASURA_GRAPHQL_ADMIN_SECRET
+        value: testing
     healthCheckPath: /graphql
     autoDeploy: true
     branch: main
