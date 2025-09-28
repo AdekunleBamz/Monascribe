@@ -7,6 +7,13 @@ RUN npm install -g pnpm
 # Set working directory
 WORKDIR /app
 
+# Set environment variables
+ENV HASURA_GRAPHQL_ENDPOINT=http://localhost:4000/v1/metadata
+ENV HASURA_GRAPHQL_ROLE=admin
+ENV HASURA_GRAPHQL_ADMIN_SECRET=testing
+ENV ENVIO_INDEXER_PORT=4000
+ENV NODE_ENV=production
+
 # Copy package files
 COPY package.json pnpm-lock.yaml ./
 

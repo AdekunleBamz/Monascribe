@@ -29,14 +29,14 @@ Smart Contract   GraphQL API            Analytics      User Interface
 
 **Basic Settings:**
 - **Name**: `monascribe-indexer`
-- **Environment**: `Node`
+- **Environment**: `Docker`
 - **Region**: Choose closest to your users
 - **Branch**: `main`
-- **Root Directory**: `monascribe-indexer`
+- **Dockerfile Path**: `./monascribe-indexer/Dockerfile`
 
 **Build & Deploy:**
-- **Build Command**: `pnpm install && pnpm codegen && pnpm build`
-- **Start Command**: `pnpm start`
+- **Environment**: `Docker`
+- **Dockerfile Path**: `./monascribe-indexer/Dockerfile`
 - **Plan**: `Starter` (free tier)
 
 ### 1.3 Environment Variables

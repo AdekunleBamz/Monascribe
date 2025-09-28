@@ -2,10 +2,9 @@
 services:
   - type: web
     name: monascribe-indexer
-    env: node
+    env: docker
     plan: starter
-    buildCommand: cd monascribe-indexer && pnpm install && pnpm codegen && pnpm build
-    startCommand: cd monascribe-indexer && pnpm start
+    dockerfilePath: ./monascribe-indexer/Dockerfile
     envVars:
       - key: NODE_ENV
         value: production
