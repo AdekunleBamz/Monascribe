@@ -14,7 +14,14 @@ function getEnv(key: string): string | undefined {
 
 export async function getSubscriptionStatusIndexed(subscriber: `0x${string}`): Promise<IndexedSubscriptionStatus | null> {
   try {
-    const url = getEnv('NEXT_PUBLIC_ENVIO_GRAPHQL_URL') || getEnv('ENVIO_GRAPHQL_URL')
+    // Skip GraphQL request during Next.js compilation phase
+    if (process.env.NODE_ENV === 'development' && !process.env.NEXT_PHASE) {
+      console.log('⏭️ Skipping GraphQL request during compilation phase in getSubscriptionStatusIndexed')
+      return null
+    }
+
+    // Use Next.js API proxy instead of direct Envio connection
+    const url = getEnv('NEXT_PUBLIC_ENVIO_GRAPHQL_URL')
     if (!url) return null
 
     const subscribedEntity = getEnv('NEXT_PUBLIC_ENVIO_SUBSCRIBED_ENTITY') || 'SubscriptionService_Subscribed'
@@ -35,7 +42,13 @@ export async function getSubscriptionStatusIndexed(subscriber: `0x${string}`): P
     `
 
     const body = JSON.stringify({ query, variables: { subscriber: subscriber.toLowerCase() } })
-    const resp = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body })
+    
+    // For server-side requests, use the full URL
+    const graphqlUrl = typeof window === 'undefined' 
+      ? `http://localhost:3000${url}`
+      : url;
+      
+    const resp = await fetch(graphqlUrl, { method: 'POST', headers: { 'content-type': 'application/json' }, body })
     if (!resp.ok) return null
     const json = await resp.json()
     if (json.errors) return null
@@ -60,5 +73,3 @@ export async function getSubscriptionStatusIndexed(subscriber: `0x${string}`): P
     return null
   }
 }
-
-

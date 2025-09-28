@@ -26,8 +26,101 @@ export default function Home() {
   const [subExpires, setSubExpires] = useState<number>(0)
   const [subPlanId, setSubPlanId] = useState<number | null>(null)
   const [contentOpen, setContentOpen] = useState(false)
+  const [isLoadingStatus, setIsLoadingStatus] = useState<boolean>(false)
   const [contentData, setContentData] = useState<any>(null)
   const [confirmOpen, setConfirmOpen] = useState(false)
+
+  // Local storage keys for persistence
+  const STORAGE_KEYS = {
+    SUB_ACTIVE: 'monascribe_sub_active',
+    SUB_EXPIRES: 'monascribe_sub_expires', 
+    SUB_PLAN_ID: 'monascribe_sub_plan_id',
+    LAST_CHECK: 'monascribe_last_check'
+  }
+
+  // Load subscription status from localStorage on component mount
+  useEffect(() => {
+    const loadStoredStatus = () => {
+      try {
+        const stored = {
+          active: localStorage.getItem(STORAGE_KEYS.SUB_ACTIVE) === 'true',
+          expires: parseInt(localStorage.getItem(STORAGE_KEYS.SUB_EXPIRES) || '0'),
+          planId: localStorage.getItem(STORAGE_KEYS.SUB_PLAN_ID) ? parseInt(localStorage.getItem(STORAGE_KEYS.SUB_PLAN_ID)!) : null,
+          lastCheck: parseInt(localStorage.getItem(STORAGE_KEYS.LAST_CHECK) || '0')
+        }
+        
+        // Only restore if data is recent (within 5 minutes)
+        const isRecent = Date.now() - stored.lastCheck < 5 * 60 * 1000
+        if (isRecent) {
+          setSubActive(stored.active)
+          setSubExpires(stored.expires)
+          setSubPlanId(stored.planId)
+        }
+      } catch (error) {
+        console.warn('Failed to load subscription status from localStorage:', error)
+      }
+    }
+    loadStoredStatus()
+  }, [])
+
+  // Check subscription status when wallet connects
+  useEffect(() => {
+    if (connectedAccount?.address) {
+      checkSubscriptionStatus(connectedAccount.address)
+    }
+  }, [connectedAccount?.address])
+
+  // Persist subscription status to localStorage
+  const persistStatus = (active: boolean, expires: number, planId: number | null) => {
+    try {
+      localStorage.setItem(STORAGE_KEYS.SUB_ACTIVE, active.toString())
+      localStorage.setItem(STORAGE_KEYS.SUB_EXPIRES, expires.toString())
+      localStorage.setItem(STORAGE_KEYS.SUB_PLAN_ID, planId?.toString() || '')
+      localStorage.setItem(STORAGE_KEYS.LAST_CHECK, Date.now().toString())
+    } catch (error) {
+      console.warn('Failed to persist subscription status:', error)
+    }
+  }
+
+  // Check subscription status from blockchain
+  const checkSubscriptionStatus = async (address: string) => {
+    if (isLoadingStatus) return
+    
+    setIsLoadingStatus(true)
+    try {
+      const result = await publicClient.readContract({
+        address: SUBSCRIPTION_CONTRACT_ADDRESS as `0x${string}`,
+        abi: SUBSCRIPTION_CONTRACT_ABI as any,
+        functionName: 'getSubscriptionStatus',
+        args: [address as `0x${string}`]
+      }) as unknown as [boolean, bigint, bigint]
+
+      const [isActive, expiresAt, planOnChain] = result
+      const expires = Number(expiresAt)
+      const planId = Number(planOnChain)
+      
+      setSubActive(isActive)
+      setSubExpires(expires)
+      setSubPlanId(isActive ? planId : null)
+      
+      // Persist to localStorage
+      persistStatus(isActive, expires, isActive ? planId : null)
+      
+      // Update status message
+      if (isActive) {
+        const planMeta = SUBSCRIPTION_PLANS.find(p => p.id === planId)
+        const expiresDate = new Date(expires * 1000)
+        setStatus(`✅ Active Subscription: ${planMeta?.title || 'Unknown Plan'} • Expires ${expiresDate.toLocaleDateString()}`)
+      } else {
+        setStatus('📱 Wallet connected - Subscribe to access premium content')
+      }
+    } catch (error) {
+      console.error('Failed to check subscription status:', error)
+      setStatus('⚠️ Unable to verify subscription status - please refresh')
+    } finally {
+      setIsLoadingStatus(false)
+    }
+  }
 
   const handleWalletConnect = async (address: string, connector: WalletConnector) => {
     setIsLoading(true)

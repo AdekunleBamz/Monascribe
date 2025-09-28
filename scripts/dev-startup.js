@@ -1,137 +1,120 @@
 #!/usr/bin/env node
 
-// Development startup script that shows connection status
 const { spawn } = require('child_process');
+const { MongoClient } = require('mongodb');
+const http = require('http');
+const url = require('url');
+
+const POLLING_INTERVAL = 2000; // 2 seconds
+const MAX_WAIT_TIME = 30000; // 30 seconds
 
 console.log('\n🔐 MonaScribe - Smart Account Subscriptions on Monad');
 console.log('================================================');
-console.log('🚀 Starting development servers...\n');
+console.log('🚀 Starting development environment...\n');
 
-// Check if MongoDB is running
+// Helper to wait for a service with polling
+async function waitForService(name, checkFunction) {
+  const startTime = Date.now();
+  process.stdout.write(`⏳ Waiting for ${name}...`);
+
+  while (Date.now() - startTime < MAX_WAIT_TIME) {
+    if (await checkFunction()) {
+      process.stdout.write(' ✅ Ready\n');
+      return true;
+    }
+    process.stdout.write('.');
+    await new Promise(resolve => setTimeout(resolve, POLLING_INTERVAL));
+  }
+
+  process.stdout.write(' ❌ Failed\n');
+  console.error(`Error: ${name} did not become available within ${MAX_WAIT_TIME / 1000} seconds.`);
+  return false;
+}
+
+// Check function for MongoDB
 async function checkMongoDB() {
   try {
-    const { MongoClient } = require('mongodb');
     const client = new MongoClient(process.env.MONGODB_URI || 'mongodb://localhost:27017', {
-      serverSelectionTimeoutMS: 3000, // 3 second timeout
-      autoEncryption: undefined, // Disable client-side encryption
+      serverSelectionTimeoutMS: 1500,
     });
     await client.connect();
-    await client.db().admin().ping(); // Simple ping test
+    await client.db().admin().ping();
     await client.close();
-    console.log('✅ MongoDB: Connected');
     return true;
-  } catch (error) {
-    console.log('❌ MongoDB: Not connected (' + error.message + ')');
+  } catch {
     return false;
   }
 }
 
-// Check if Envio is running
+// Check function for Envio GraphQL
 async function checkEnvio() {
-  try {
-    const http = require('http');
-    const url = require('url');
-    
-    const envioUrl = process.env.NEXT_PUBLIC_ENVIO_GRAPHQL_URL || 'http://localhost:8080/v1/graphql';
-    const parsedUrl = url.parse(envioUrl);
-    
-    const postData = JSON.stringify({
-      query: '{ __typename }',
+  const envioUrl = process.env.ENVIO_GRAPHQL_URL || 'http://localhost:8080/v1/graphql';
+  const parsedUrl = url.parse(envioUrl);
+  const postData = JSON.stringify({ query: '{ __typename }' });
+
+  const options = {
+    hostname: parsedUrl.hostname,
+    port: parsedUrl.port || 80,
+    path: parsedUrl.path,
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Content-Length': Buffer.byteLength(postData),
+    },
+    timeout: 1500,
+  };
+
+  return new Promise((resolve) => {
+    const req = http.request(options, (res) => {
+      resolve(res.statusCode === 200);
     });
-
-    const options = {
-      hostname: parsedUrl.hostname,
-      port: parsedUrl.port || 8080,
-      path: parsedUrl.path,
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Content-Length': Buffer.byteLength(postData)
-      },
-      timeout: 3000
-    };
-
-    return new Promise((resolve) => {
-      const req = http.request(options, (res) => {
-        if (res.statusCode === 200) {
-          console.log('✅ Envio GraphQL: Connected');
-          resolve(true);
-        } else {
-          console.log('❌ Envio GraphQL: Not connected (HTTP ' + res.statusCode + ')');
-          resolve(false);
-        }
-      });
-
-      req.on('error', (error) => {
-        console.log('❌ Envio GraphQL: Not connected (' + error.message + ')');
-        resolve(false);
-      });
-
-      req.on('timeout', () => {
-        console.log('❌ Envio GraphQL: Not connected (timeout)');
-        req.destroy();
-        resolve(false);
-      });
-
-      req.write(postData);
-      req.end();
+    req.on('error', () => resolve(false));
+    req.on('timeout', () => {
+      req.destroy();
+      resolve(false);
     });
-  } catch (error) {
-    console.log('❌ Envio GraphQL: Not connected (' + error.message + ')');
-    return false;
-  }
+    req.write(postData);
+    req.end();
+  });
 }
 
 async function main() {
   console.log('🔍 Checking service connections...\n');
-  
-  // Check connections sequentially to avoid race conditions
-  const mongoOk = await checkMongoDB();
-  await new Promise(resolve => setTimeout(resolve, 500)); // Small delay
-  const envioOk = await checkEnvio();
+
+  const mongoOk = await waitForService('MongoDB', checkMongoDB);
+  const envioOk = await waitForService('Envio GraphQL', checkEnvio);
 
   console.log('\n📊 Service Status:');
   console.log('==================');
-  console.log(`🗄️  Database: ${mongoOk ? 'Ready' : 'Offline (using fallback data)'}`);
-  console.log(`📊 Indexer: ${envioOk ? 'Ready' : 'Offline (using mock data)'}`);
-  console.log('🌐 Web Server: Starting Next.js...\n');
+  console.log(`🗄️  Database: ${mongoOk ? 'Online' : 'Offline'}`);
+  console.log(`📊 Indexer:  ${envioOk ? 'Online' : 'Offline'}`);
+  console.log('==================\n');
 
-  if (mongoOk && envioOk) {
-    console.log('🎉 All systems operational!\n');
-  } else {
-    console.log('⚠️  Some services offline - app will use fallback data.\n');
-    
-    if (!mongoOk) {
-      console.log('💡 To enable database features:');
-      console.log('   • Install MongoDB locally: https://docs.mongodb.com/manual/installation/');
-      console.log('   • Or set MONGODB_URI to a cloud instance (Atlas, etc.)');
-    }
-    
-    if (!envioOk) {
-      console.log('💡 To enable real-time indexing:');
-      console.log('   • Start Envio indexer: cd monascribe-indexer && pnpm dev');
-    }
-    console.log('');
+  if (!mongoOk || !envioOk) {
+    console.error('❌ One or more required services are offline. Aborting startup.');
+    if (!mongoOk) console.log('   -> Tip: Start MongoDB with `docker start monascribe-db`');
+    if (!envioOk) console.log('   -> Tip: Start the indexer with `npm run dev:indexer`');
+    process.exit(1);
   }
 
+  console.log('🎉 All systems operational! Starting Next.js web server...\n');
   console.log('📡 Local: http://localhost:3000');
-  console.log('🔧 Mode: Development');
+  console.log('🔧 Mode:  Development');
   console.log('=============================\n');
 
-  // Start Next.js development server
   const nextProcess = spawn('npx', ['next', 'dev'], {
     stdio: 'inherit',
-    shell: true
+    shell: true,
   });
 
   nextProcess.on('close', (code) => {
     console.log(`\n🛑 Development server exited with code ${code}`);
   });
 
-  // Handle graceful shutdown
   process.on('SIGINT', () => {
     console.log('\n🛑 Shutting down development server...');
     nextProcess.kill('SIGINT');
+    process.exit(0);
   });
 }
 

@@ -4,6 +4,7 @@ import { publicClient } from '../../lib/config'
 import { SUBSCRIPTION_CONTRACT_ABI, SUBSCRIPTION_CONTRACT_ADDRESS } from '../../lib/subscriptionContract'
 import { getDb } from '../../lib/db'
 import { syncSubscriptionEvents, generateSmartMoneyAnalytics } from '../../lib/envioSync'
+import { monadNetwork } from '../../lib/monadNetworkData'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
@@ -50,6 +51,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     } catch (syncError) {
       console.warn('🔄 Envio sync failed, using cached MongoDB data:', syncError)
     }
+
+    // Get real-time Monad network data
+    const networkData = await monadNetwork.getNetworkData()
+    const formattedNetwork = monadNetwork.getFormattedData(networkData)
 
     // Generate real smart money analytics from MongoDB
     const analytics = await generateSmartMoneyAnalytics()
@@ -157,9 +162,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       },
       networkInfo: {
         chain: 'Monad Testnet',
-        blockTime: '400ms',
-        tps: '10,000+',
-        finality: '800ms'
+        latestBlock: formattedNetwork.network.latestBlock,
+        blockTime: formattedNetwork.network.blockTime,
+        tps: formattedNetwork.network.tps,
+        gasPrice: formattedNetwork.network.gasPrice,
+        utilization: formattedNetwork.network.utilization,
+        activeAddresses: formattedNetwork.activity.activeToday,
+        weeklyGrowth: formattedNetwork.activity.growth,
+        smartAccounts: formattedNetwork.activity.smartAccounts,
+        subscriptions: formattedNetwork.activity.subscriptions,
+        recentTransactions: formattedNetwork.transactions
       }
     }
 

@@ -13,7 +13,61 @@ import { getSubscriptionStatusIndexed } from './indexer'
 import { monadMetrics, type MonadNetworkMetrics } from './monadMetrics'
 import { mockDataGenerator, type MockSmartMoneyWallet, type MockDEXTrade, type MockMarketIntelligence } from './mockDataGenerator'
 
-const ENVIO_GRAPHQL_URL = process.env.NEXT_PUBLIC_ENVIO_GRAPHQL_URL
+// Use Next.js API proxy instead of direct Envio connection
+const ENVIO_GRAPHQL_URL = '/api/graphql'
+
+/**
+ * Fetch with retry logic and timeout handling for Envio GraphQL
+ */
+async function fetchWithRetry(url: string, options: RequestInit, maxRetries = 3): Promise<Response> {
+  let lastError: Error | null = null
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      // Add timeout and proper headers
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 15000) // 15 second timeout
+
+      const fetchOptions = {
+        ...options,
+        signal: controller.signal,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          ...options.headers,
+        }
+      }
+
+      const response = await fetch(url, fetchOptions)
+      clearTimeout(timeoutId)
+      
+      if (response.ok) {
+        return response
+      }
+      
+      // If it's a 5xx error, retry. For 4xx errors, don't retry
+      if (response.status >= 500 && attempt < maxRetries) {
+        console.warn(`Envio API attempt ${attempt} failed with status ${response.status}, retrying...`)
+        await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000)) // Exponential backoff
+        continue
+      }
+      
+      return response
+    } catch (error: any) {
+      lastError = error
+      console.warn(`Envio API attempt ${attempt} failed:`, error.message)
+      
+      if (attempt < maxRetries) {
+        // Wait before retrying (exponential backoff)
+        await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000))
+        continue
+      }
+    }
+  }
+
+  // If all retries failed, throw the last error
+  throw lastError || new Error(`Failed to fetch after ${maxRetries} attempts`)
+}
 
 interface EnvioSubscriptionEvent {
   id: string
@@ -98,10 +152,10 @@ export async function syncSubscriptionEvents(): Promise<{ synced: number; errors
     const db = await getDb()
     const subscriptionEvents = db.collection('subscription_events')
     
-    // Query basic subscription events (smart money features will work once indexer is running)
+    // Query all available events from the indexer
     const query = `
       query GetLatestEvents {
-        SubscriptionService_Subscribed(limit: 100) {
+        SubscriptionService_Subscribed(limit: 100, order_by: { blockNumber: desc }) {
           id
           subscriber
           planId
@@ -110,7 +164,7 @@ export async function syncSubscriptionEvents(): Promise<{ synced: number; errors
           transactionHash
           timestamp
         }
-        SubscriptionService_SubscriptionCancelled(limit: 100) {
+        SubscriptionService_SubscriptionCancelled(limit: 100, order_by: { blockNumber: desc }) {
           id
           subscriber
           planId
@@ -119,6 +173,49 @@ export async function syncSubscriptionEvents(): Promise<{ synced: number; errors
           transactionHash
           timestamp
         }
+        tokenTransfers(limit: 100, order_by: { blockNumber: desc }) {
+          id
+          token
+          from
+          to
+          value
+          blockNumber
+          transactionHash
+          timestamp
+          isLargeTransfer
+        }
+        dexTrades(limit: 100, order_by: { blockNumber: desc }) {
+          id
+          trader
+          tokenIn
+          tokenOut
+          amountIn
+          amountOut
+          dexProtocol
+          blockNumber
+          transactionHash
+          timestamp
+        }
+        smartMoneyWallets(limit: 100, order_by: { lastActive: desc }) {
+          id
+          address
+          totalVolume
+          transactionCount
+          firstSeen
+          lastActive
+          isWhale
+          tags
+        }
+        smartMoneyScores(limit: 100, order_by: { lastUpdated: desc }) {
+          id
+          wallet_id
+          totalScore
+          volumeScore
+          frequencyScore
+          diversityScore
+          timingScore
+          lastUpdated
+        }
       }
     `
 
@@ -126,7 +223,19 @@ export async function syncSubscriptionEvents(): Promise<{ synced: number; errors
     const syncStatus = await db.collection('sync_status').findOne({ _id: 'envio_sync' } as any)
     const lastSyncBlock = syncStatus?.lastBlock || 0
 
-    const response = await fetch(ENVIO_GRAPHQL_URL, {
+    // Only make GraphQL request if we're actually running (not during compilation)
+    if (process.env.NODE_ENV === 'development' && !process.env.NEXT_PHASE) {
+      // Skip GraphQL request during Next.js compilation phase
+      console.log('⏭️ Skipping GraphQL request during compilation phase')
+      return { synced: 0, errors: ['Skipped during compilation'] }
+    }
+
+    // For server-side requests, use the full URL
+    const graphqlUrl = typeof window === 'undefined' 
+      ? `http://localhost:3000${ENVIO_GRAPHQL_URL}`
+      : ENVIO_GRAPHQL_URL;
+      
+    const response = await fetchWithRetry(graphqlUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -474,11 +583,15 @@ export async function generateSmartMoneyAnalytics(): Promise<any> {
       ]
     }
     
-    const activeWhales = topSmartMoney.filter((w: any) => w.activity === 'Whale').length
-    const totalSmartMoney = mockSmartWallets.length
-    const totalLargeTransfers = largeTransfers.length
-    const totalDexTrades = mockDexTrades.length
-    const totalVolume = topSmartMoney.reduce((sum: number, w: any) => sum + (w.volume || 0), 0)
+    const activeWhales = hasRealData 
+      ? topSmartMoney.filter((w: any) => w.activity === 'Whale').length
+      : mockSmartWallets.filter((w: any) => w.isWhale).length;
+    const totalSmartMoney = hasRealData ? topSmartMoney.length : mockSmartWallets.length;
+    const totalLargeTransfers = largeTransfers.length;
+    const totalDexTrades = hasRealData ? dexActivity.reduce((sum: number, p: any) => sum + p.trades, 0) : mockDexTrades.length;
+    const totalVolume = hasRealData
+      ? topSmartMoney.reduce((sum: number, w: any) => sum + (w.volume || 0), 0)
+      : mockSmartWallets.reduce((sum: number, w: any) => sum + parseFloat(w.totalVolume), 0);
     
     // Enhanced insights with market intelligence
     const insights = [
@@ -518,7 +631,7 @@ export async function generateSmartMoneyAnalytics(): Promise<any> {
         gasPrice: parseFloat(networkMetrics.gasPrice.current)
       },
       // Keep subscription data for compatibility
-      planPopularity: await getSubscriptionPlanStats(subscriptionEvents, sevenDaysAgo)
+      planPopularity: await getSubscriptionPlanStats(db.collection('subscription_events'), sevenDaysAgo)
     }
   } catch (error: any) {
     console.error('Error generating smart money analytics:', error)

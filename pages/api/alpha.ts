@@ -4,6 +4,7 @@ import { publicClient } from '../../lib/config'
 import { SUBSCRIPTION_CONTRACT_ABI, SUBSCRIPTION_CONTRACT_ADDRESS } from '../../lib/subscriptionContract'
 import { getDb } from '../../lib/db'
 import { generateWeeklyAlpha, syncSubscriptionEvents } from '../../lib/envioSync'
+import { monadNetwork } from '../../lib/monadNetworkData'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
@@ -31,6 +32,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
     if (!isActive) return res.status(403).send('Access denied: Weekly Alpha requires an active subscription')
 
+    // Get real-time network data for all responses
+    const networkData = await monadNetwork.getNetworkData()
+    const formattedNetwork = monadNetwork.getFormattedData(networkData)
+
     if (action === 'generate') {
       // Sync latest blockchain data first
       try {
@@ -48,7 +53,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         message: `Weekly Alpha #${nextIssueNumber} generated successfully`,
         issueNumber: nextIssueNumber,
         preview: alphaReport.content.substring(0, 200) + '...',
-        metrics: alphaReport.metrics
+        metrics: alphaReport.metrics,
+        networkInfo: formattedNetwork
       })
     }
 
@@ -72,7 +78,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           content: firstIssue.content,
           metrics: firstIssue.metrics,
           generatedAt: new Date().toISOString(),
-          isNew: true
+          isNew: true,
+          networkInfo: formattedNetwork
         })
       }
       alpha = latest[0]
@@ -83,7 +90,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       content: alpha.content,
       metrics: alpha.metrics,
       generatedAt: alpha.generatedAt,
-      dataSource: process.env.NEXT_PUBLIC_ENVIO_GRAPHQL_URL ? 'Envio + MongoDB' : 'MongoDB + RPC'
+      dataSource: process.env.NEXT_PUBLIC_ENVIO_GRAPHQL_URL ? 'Envio + MongoDB' : 'MongoDB + RPC',
+      networkInfo: formattedNetwork
     })
   } catch (e: any) {
     console.error('Alpha API error:', e)

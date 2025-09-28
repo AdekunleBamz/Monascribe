@@ -3,8 +3,9 @@
   "version": "1.0.0",
   "description": "MonaScribe — Smart-account subscriptions on Monad (MetaMask Smart Accounts)",
   "scripts": {
-    "dev": "node scripts/dev-startup.js",
-    "dev:next": "next dev",
+    "dev": "npm run dev:indexer & npm run dev:web",
+    "dev:web": "node scripts/dev-startup.js",
+    "dev:indexer": "cd monascribe-indexer && pnpm dev",
     "build": "next build",
     "start": "next start"
   },

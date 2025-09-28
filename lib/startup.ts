@@ -30,9 +30,15 @@ export async function checkConnectionStatus(): Promise<StartupStatus> {
     status.mongodb = false;
   }
 
-  // Check Envio GraphQL endpoint
+  // Check Envio GraphQL endpoint directly (server-side)
   try {
-    const envioUrl = process.env.NEXT_PUBLIC_ENVIO_GRAPHQL_URL || 'http://localhost:8080/v1/graphql';
+    const envioUrl = process.env.ENVIO_GRAPHQL_URL || 'http://localhost:8080/v1/graphql';
+    console.log(`🔍 Testing GraphQL connection directly: ${envioUrl}`);
+    
+    // Create manual timeout using AbortController
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    
     const response = await fetch(envioUrl, {
       method: 'POST',
       headers: {
@@ -41,17 +47,22 @@ export async function checkConnectionStatus(): Promise<StartupStatus> {
       body: JSON.stringify({
         query: '{ __typename }', // Simple introspection query
       }),
-      signal: AbortSignal.timeout(5000) // 5 second timeout
+      signal: controller.signal
     });
+
+    clearTimeout(timeoutId);
 
     if (response.ok) {
       status.envio = true;
-      console.log('✅ Envio GraphQL Connected Successfully');
+      console.log('✅ Envio GraphQL Connected Successfully (server-side)');
     } else {
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
   } catch (error) {
     console.log('❌ Envio GraphQL Connection Failed:', error instanceof Error ? error.message : 'Unknown error');
+    if (error instanceof Error && error.name === 'AbortError') {
+      console.log('   💡 This is likely a timeout - GraphQL server may be slow or unreachable');
+    }
     status.envio = false;
   }
 

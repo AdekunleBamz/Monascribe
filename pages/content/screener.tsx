@@ -170,6 +170,67 @@ export default function OnchainScreener() {
               </div>
             </div>
 
+            {/* Network Statistics */}
+            {rows?.networkInfo && (
+              <div style={{ marginBottom: 20 }}>
+                <h3 style={{ marginBottom: 16, color: '#111827' }}>🌐 Monad Network Status</h3>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px' }}>
+                  <div style={{ padding: 16, border: '1px solid #e5e7eb', borderRadius: 12, background: '#ffffff' }}>
+                    <div style={{ fontWeight: 'bold', marginBottom: 8, color: '#1f2937' }}>Latest Block</div>
+                    <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#059669' }}>{rows.networkInfo.latestBlock}</div>
+                    <div style={{ fontSize: '12px', color: '#6b7280', marginTop: 4 }}>Block Time: {rows.networkInfo.blockTime}</div>
+                  </div>
+                  
+                  <div style={{ padding: 16, border: '1px solid #e5e7eb', borderRadius: 12, background: '#ffffff' }}>
+                    <div style={{ fontWeight: 'bold', marginBottom: 8, color: '#1f2937' }}>Network Performance</div>
+                    <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#dc2626' }}>{rows.networkInfo.tps}</div>
+                    <div style={{ fontSize: '12px', color: '#6b7280', marginTop: 4 }}>Gas: {rows.networkInfo.gasPrice}</div>
+                  </div>
+                  
+                  <div style={{ padding: 16, border: '1px solid #e5e7eb', borderRadius: 12, background: '#ffffff' }}>
+                    <div style={{ fontWeight: 'bold', marginBottom: 8, color: '#1f2937' }}>Active Users</div>
+                    <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#7c3aed' }}>{rows.networkInfo.activeAddresses}</div>
+                    <div style={{ fontSize: '12px', color: '#6b7280', marginTop: 4 }}>Growth: {rows.networkInfo.weeklyGrowth}</div>
+                  </div>
+                  
+                  <div style={{ padding: 16, border: '1px solid #e5e7eb', borderRadius: 12, background: '#ffffff' }}>
+                    <div style={{ fontWeight: 'bold', marginBottom: 8, color: '#1f2937' }}>Smart Accounts</div>
+                    <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#059669' }}>{rows.networkInfo.smartAccounts}</div>
+                    <div style={{ fontSize: '12px', color: '#6b7280', marginTop: 4 }}>Subscriptions: {rows.networkInfo.subscriptions}</div>
+                  </div>
+                </div>
+                
+                {/* Recent Transactions */}
+                {rows.networkInfo.recentTransactions?.length > 0 && (
+                  <div style={{ marginTop: 16 }}>
+                    <h4 style={{ marginBottom: 12, color: '#111827' }}>Latest Transactions</h4>
+                    <div style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 8, padding: 12 }}>
+                      {rows.networkInfo.recentTransactions.slice(0, 3).map((tx: any, i: number) => (
+                        <div key={i} style={{ 
+                          padding: '8px 0',
+                          borderBottom: i < 2 ? '1px solid #e5e7eb' : 'none',
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          fontSize: '13px'
+                        }}>
+                          <span style={{ fontFamily: 'monospace' }}>{tx.hash}</span>
+                          <span style={{ 
+                            background: tx.type === 'swap' ? '#fef3c7' : tx.type === 'contract' ? '#ddd6fe' : '#dcfce7',
+                            padding: '2px 6px',
+                            borderRadius: 4,
+                            fontSize: '11px',
+                            textTransform: 'uppercase'
+                          }}>{tx.type}</span>
+                          <span style={{ color: '#6b7280' }}>{tx.age}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Market Intelligence Summary */}
             {rows?.marketIntelligence && (
               <div style={{ border: '1px solid #e5e7eb', borderRadius: 12, padding: 16, background: '#fffbeb' }}>
