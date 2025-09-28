@@ -1,0 +1,28 @@
+# Render deployment configuration for Envio Indexer
+services:
+  - type: web
+    name: monascribe-indexer
+    env: node
+    plan: starter
+    buildCommand: cd monascribe-indexer && pnpm install && pnpm codegen && pnpm build
+    startCommand: cd monascribe-indexer && pnpm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGODB_URI
+        fromDatabase:
+          name: mongodb
+          property: connectionString
+      - key: MONGODB_DB
+        value: monascribe_analytics
+      - key: ENVIO_GRAPHQL_URL
+        value: /graphql
+    healthCheckPath: /graphql
+    autoDeploy: true
+    branch: main
+    rootDir: monascribe-indexer
+
+databases:
+  - name: mongodb
+    plan: starter
+    databaseName: monascribe_analytics

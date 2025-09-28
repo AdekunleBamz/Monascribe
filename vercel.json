@@ -8,6 +8,12 @@
   },
   "env": {
     "MONGODB_DB": "monascribe_analytics",
-    "NEXT_PUBLIC_ENVIO_GRAPHQL_URL": "https://indexer.bigdevenergy.link/2a12346/v1/graphql"
+    "NEXT_PUBLIC_ENVIO_GRAPHQL_URL": "https://your-render-app.onrender.com/graphql",
+    "NEXT_PUBLIC_APP_ENV": "production"
+  },
+  "build": {
+    "env": {
+      "NODE_ENV": "production"
+    }
   }
 }
