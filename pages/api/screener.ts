@@ -138,14 +138,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         },
       ],
       summary: {
+        ...analytics.summary, // Use the enhanced analytics summary with market data
         activeUsers: analytics.totalActiveUsers,
         whaleCount: analytics.whaleCount,
         topPlan: analytics.planPopularity[0]?.planName || 'Basic Newsletter',
         smartMoneyScore: analytics.topSmartMoney[0]?.score || 0,
-        marketSentiment: marketIntel.sentiment.overallSentiment,
         sentimentScore: marketIntel.sentiment.sentimentScore,
         defiTvl: marketIntel.defiMetrics.totalValueLocked,
-        whaleAlertLevel: marketIntel.whaleIntelligence.alertLevel,
         fearGreedIndex: marketIntel.macroIndicators.fearGreedIndex,
         dataSource: process.env.NEXT_PUBLIC_ENVIO_GRAPHQL_URL ? 'Envio + External Intelligence' : 'MongoDB + Market Intelligence',
         note: `Comprehensive smart money & market intelligence from multiple sources`
