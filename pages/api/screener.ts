@@ -44,10 +44,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Generate real smart money analytics from MongoDB
     const analytics = await generateSmartMoneyAnalytics()
     
+    // Get market data for better insights
+    const { getLatestMarketData } = await import('../../lib/coingecko')
+    const marketData = await getLatestMarketData()
+    
     // Generate comprehensive market intelligence
     const { generateMarketIntelligence, generateMarketInsights } = await import('../../lib/externalAnalytics')
     const marketIntel = await generateMarketIntelligence()
     const insights = await generateMarketInsights(marketIntel)
+    
+    // Enhance analytics with market data
+    if (marketData) {
+      analytics.summary.marketSentiment = calculateMarketSentiment(marketData)
+      analytics.summary.bitcoinPrice = marketData.bitcoin?.usd || 0
+      analytics.summary.ethereumPrice = marketData.ethereum?.usd || 0
+      analytics.summary.marketCap = (marketData.bitcoin?.usd_market_cap || 0) + (marketData.ethereum?.usd_market_cap || 0)
+    }
 
     // Transform to screener format with enhanced smart money data and market intelligence
     const data = {
@@ -172,6 +184,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     console.error('Screener API error:', e)
     return res.status(500).send(e?.message || 'Internal error')
   }
+}
+
+// Helper function to calculate market sentiment from price changes
+function calculateMarketSentiment(marketData: any): string {
+  const changes = [
+    marketData.bitcoin?.usd_24h_change || 0,
+    marketData.ethereum?.usd_24h_change || 0,
+    marketData.monad?.usd_24h_change || 0
+  ]
+  
+  const avgChange = changes.reduce((sum, change) => sum + change, 0) / changes.length
+  
+  if (avgChange > 5) return 'bullish'
+  if (avgChange < -5) return 'bearish'
+  return 'neutral'
 }
 
 
