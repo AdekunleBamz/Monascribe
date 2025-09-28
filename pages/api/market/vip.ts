@@ -101,15 +101,5 @@ async function handler(req: NextApiRequest, res: NextApiResponse, user: any) {
   }
 }
 
-// Temporarily bypass subscription check for testing
-export default async function(req: NextApiRequest, res: NextApiResponse) {
-  try {
-    const { address } = req.query
-    const user = { address, subscription: { planId: 3 } } // Mock VIP subscription
-    return await handler(req, res, user)
-  } catch (error: any) {
-    console.error('VIP market API error:', error)
-    res.status(500).json({ error: error.message })
-  }
-}
+export default withSubscriptionAccess('vip', handler)
 
