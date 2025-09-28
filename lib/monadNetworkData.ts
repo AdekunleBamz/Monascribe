@@ -59,8 +59,8 @@ export class MonadNetworkService {
   }
 
   /**
-   * Get real-time network data
-   * Falls back to realistic mock data if the visualizer API is unavailable
+   * Get real-time network data from Monad RPC
+   * Uses real blockchain data only
    */
   async getNetworkData(): Promise<MonadNetworkData> {
     const now = Date.now()
@@ -77,163 +77,102 @@ export class MonadNetworkService {
       this.lastFetch = now
       return data
     } catch (error) {
-      console.warn('Failed to fetch from visualizer, using mock data:', error)
-      // Generate realistic mock data
-      const mockData = this.generateMockData()
-      this.cache = mockData
-      this.lastFetch = now
-      return mockData
+      console.error('Failed to fetch from visualizer:', error)
+      throw new Error('Unable to fetch network data from Monad RPC')
     }
   }
 
   /**
-   * Attempt to fetch data from the Monad visualizer
+   * Fetch data from Monad RPC directly
    */
   private async fetchFromVisualizer(): Promise<MonadNetworkData> {
-    // Try common API endpoints
-    const endpoints = [
-      'https://monbamzz-visualizer.vercel.app/api/stats',
-      'https://monbamzz-visualizer.vercel.app/api/network',
-      'https://monbamzz-visualizer.vercel.app/api/latest'
-    ]
-
-    for (const endpoint of endpoints) {
-      try {
-        const response = await fetch(endpoint, { 
-          timeout: 5000,
-          headers: { 'Accept': 'application/json' }
+    const RPC_URL = 'https://testnet-rpc.monad.xyz'
+    
+    try {
+      // Fetch latest block
+      const blockResponse = await fetch(RPC_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          method: 'eth_getBlockByNumber',
+          params: ['latest', true],
+          id: 1
         })
-        
-        if (response.ok) {
-          const data = await response.json()
-          return this.mapVisualizerData(data)
-        }
-      } catch (error) {
-        continue // Try next endpoint
-      }
-    }
-
-    throw new Error('No available API endpoints')
-  }
-
-  /**
-   * Map visualizer API response to our data structure
-   */
-  private mapVisualizerData(data: any): MonadNetworkData {
-    // Adapt based on actual API structure when available
-    return {
-      latestBlock: {
-        number: data.block?.number || this.generateMockBlockNumber(),
-        timestamp: data.block?.timestamp || Math.floor(Date.now() / 1000),
-        transactions: data.block?.transactions || Math.floor(Math.random() * 50) + 10,
-        gasUsed: data.block?.gasUsed || this.formatGas(Math.random() * 15000000 + 5000000),
-        gasLimit: data.block?.gasLimit || '30000000'
-      },
-      latestTransactions: data.transactions || this.generateMockTransactions(),
-      activeAddresses: {
-        last24h: data.addresses?.daily || Math.floor(Math.random() * 500) + 100,
-        last7d: data.addresses?.weekly || Math.floor(Math.random() * 2000) + 500,
-        growth: data.addresses?.growth || (Math.random() * 20) - 5
-      },
-      networkStats: {
-        tps: data.tps || Math.random() * 100 + 50,
-        avgBlockTime: data.blockTime || 2.1 + Math.random() * 0.8,
-        gasPrice: {
-          slow: data.gas?.slow || this.formatGwei(Math.random() * 10 + 5),
-          standard: data.gas?.standard || this.formatGwei(Math.random() * 15 + 10),
-          fast: data.gas?.fast || this.formatGwei(Math.random() * 20 + 15)
-        },
-        validators: data.validators || 150 + Math.floor(Math.random() * 50),
-        networkUtilization: data.utilization || Math.random() * 0.3 + 0.4
-      },
-      smartAccounts: {
-        total: data.smartAccounts?.total || Math.floor(Math.random() * 1000) + 200,
-        active24h: data.smartAccounts?.active || Math.floor(Math.random() * 100) + 20,
-        subscriptions: data.smartAccounts?.subscriptions || Math.floor(Math.random() * 50) + 5
-      }
-    }
-  }
-
-  /**
-   * Generate realistic mock data for development/demo
-   */
-  private generateMockData(): MonadNetworkData {
-    const baseBlockNumber = 2845000 + Math.floor((Date.now() - 1700000000000) / 2000)
-    
-    return {
-      latestBlock: {
-        number: baseBlockNumber,
-        timestamp: Math.floor(Date.now() / 1000),
-        transactions: Math.floor(Math.random() * 40) + 15,
-        gasUsed: this.formatGas(Math.random() * 12000000 + 6000000),
-        gasLimit: '30000000'
-      },
-      latestTransactions: this.generateMockTransactions(),
-      activeAddresses: {
-        last24h: Math.floor(Math.random() * 400) + 150,
-        last7d: Math.floor(Math.random() * 1800) + 800,
-        growth: (Math.random() * 25) - 8 // -8% to +17% growth
-      },
-      networkStats: {
-        tps: Math.random() * 80 + 40,
-        avgBlockTime: 1.8 + Math.random() * 0.6,
-        gasPrice: {
-          slow: this.formatGwei(Math.random() * 8 + 3),
-          standard: this.formatGwei(Math.random() * 12 + 8),
-          fast: this.formatGwei(Math.random() * 18 + 12)
-        },
-        validators: 147 + Math.floor(Math.random() * 23),
-        networkUtilization: Math.random() * 0.25 + 0.45
-      },
-      smartAccounts: {
-        total: 847 + Math.floor(Math.random() * 200),
-        active24h: 67 + Math.floor(Math.random() * 40),
-        subscriptions: 23 + Math.floor(Math.random() * 15)
-      }
-    }
-  }
-
-  /**
-   * Generate mock transaction data
-   */
-  private generateMockTransactions() {
-    const transactions = []
-    const now = Math.floor(Date.now() / 1000)
-    
-    for (let i = 0; i < 10; i++) {
-      const txType = this.getRandomTxType()
-      transactions.push({
-        hash: `0x${this.generateRandomHex(64)}`,
-        from: `0x${this.generateRandomHex(40)}`,
-        to: `0x${this.generateRandomHex(40)}`,
-        value: this.formatEther(Math.random() * 1000),
-        gasPrice: this.formatGwei(Math.random() * 15 + 5),
-        timestamp: now - (i * 10),
-        type: txType
       })
+
+      if (!blockResponse.ok) {
+        throw new Error(`RPC request failed: ${blockResponse.status}`)
+      }
+
+      const blockData = await blockResponse.json()
+      const block = blockData.result
+
+      if (!block) {
+        throw new Error('No block data received from RPC')
+      }
+
+      return this.mapRPCData(block)
+    } catch (error) {
+      console.error('Failed to fetch from Monad RPC:', error)
+      throw new Error('Unable to fetch network data from Monad RPC')
     }
-    
-    return transactions
   }
 
-  // Helper methods
-  private generateMockBlockNumber(): number {
-    return 2845000 + Math.floor((Date.now() - 1700000000000) / 2000)
-  }
+  /**
+   * Map RPC block data to our data structure
+   */
+  private mapRPCData(block: any): MonadNetworkData {
+    const blockNumber = parseInt(block.number, 16)
+    const timestamp = parseInt(block.timestamp, 16)
+    const gasUsed = parseInt(block.gasUsed, 16)
+    const gasLimit = parseInt(block.gasLimit, 16)
+    const transactionCount = block.transactions.length
 
-  private getRandomTxType(): 'transfer' | 'contract' | 'swap' {
-    const types: Array<'transfer' | 'contract' | 'swap'> = ['transfer', 'contract', 'swap']
-    return types[Math.floor(Math.random() * types.length)]
-  }
-
-  private generateRandomHex(length: number): string {
-    const chars = '0123456789abcdef'
-    let result = ''
-    for (let i = 0; i < length; i++) {
-      result += chars[Math.floor(Math.random() * chars.length)]
+    return {
+      latestBlock: {
+        number: blockNumber,
+        timestamp: timestamp,
+        transactions: transactionCount,
+        gasUsed: this.formatGas(gasUsed),
+        gasLimit: gasLimit.toString()
+      },
+      latestTransactions: block.transactions.slice(0, 10).map((tx: any) => ({
+        hash: tx.hash,
+        from: tx.from,
+        to: tx.to,
+        value: this.formatEther(parseInt(tx.value, 16)),
+        gasUsed: parseInt(tx.gas, 16),
+        type: 'transfer', // Default type
+        timestamp: timestamp // Use block timestamp
+      })),
+      activeAddresses: {
+        last24h: 0, // Would need additional RPC calls to calculate
+        last7d: 0,  // Would need additional RPC calls to calculate
+        growth: 0   // Would need additional RPC calls to calculate
+      },
+      networkStats: {
+        tps: 0, // Would need multiple blocks to calculate
+        avgBlockTime: 0, // Would need multiple blocks to calculate
+        gasPrice: {
+          slow: this.formatGwei(0),
+          standard: this.formatGwei(0),
+          fast: this.formatGwei(0)
+        },
+        validators: 0, // Would need additional RPC calls
+        networkUtilization: (gasUsed / gasLimit) * 100
+      },
+      smartAccounts: {
+        total: 0, // Would need additional RPC calls
+        active24h: 0, // Would need additional RPC calls
+        subscriptions: 0 // Would need additional RPC calls
+      }
     }
-    return result
   }
+
+  // Removed mock data generation methods - using only real on-chain data
+
+  // Removed mock data helper methods - using only real on-chain data
 
   private formatGas(value: number): string {
     return Math.floor(value).toLocaleString()

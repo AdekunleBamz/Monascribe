@@ -87,16 +87,16 @@ export default function OnchainScreener() {
                 🐋 Smart Money Tracking
               </h3>
               <div style={{ fontSize: '14px', color: '#4b5563', marginBottom: '12px' }}>
-                <div>— {rows?.insights?.smartMoneyCount || 0} whale wallets active this week</div>
-                <div>— ${(rows?.insights?.totalSmartVolume || 0).toLocaleString()} in smart money flow</div>
-                <div>— {rows?.insights?.avgSmartScore || 0} average smart money score</div>
+                <div>— {summary?.whaleCount || 0} whale wallets active this week</div>
+                <div>— ${(summary?.smartMoneyScore || 0).toLocaleString()} in smart money flow</div>
+                <div>— {summary?.smartMoneyScore || 0} average smart money score</div>
               </div>
-              {rows?.tokenFlows?.topSmartMoney?.length > 0 && (
+              {rows?.tokenFlows?.length > 0 && (
                 <div>
                   <strong style={{ fontSize: '13px' }}>Top Smart Money:</strong>
                   <ul style={{ margin: '4px 0 0 0', paddingLeft: '16px', fontSize: '12px' }}>
-                    {rows.tokenFlows.topSmartMoney.map((wallet: any, i: number) => (
-                      <li key={i}>{wallet.wallet.slice(0,8)}... — Score: {wallet.score}</li>
+                    {rows.tokenFlows.slice(0, 3).map((wallet: any, i: number) => (
+                      <li key={i}>{wallet.wallet} — Score: {wallet.amount}</li>
                     ))}
                   </ul>
                 </div>
@@ -132,9 +132,9 @@ export default function OnchainScreener() {
                 🔄 DEX Activity
               </h3>
               <div style={{ fontSize: '14px', color: '#4b5563' }}>
-                <div>— {rows?.insights?.dexProtocolCount || 0} protocols with {rows?.insights?.totalDexTrades || 0} total trades</div>
-                <div>— ${(rows?.insights?.totalDexVolume || 0).toLocaleString()} 24h volume</div>
-                <div>— {rows?.insights?.uniqueTraders || 0} unique traders</div>
+                <div>— {rows?.dexActivity?.length || 0} protocols with {rows?.dexActivity?.reduce((sum: number, p: any) => sum + (p.trades || 0), 0) || 0} total trades</div>
+                <div>— ${(rows?.dexActivity?.reduce((sum: number, p: any) => sum + (p.totalVolumeIn || 0), 0) || 0).toLocaleString()} 24h volume</div>
+                <div>— {rows?.dexActivity?.reduce((sum: number, p: any) => sum + (p.uniqueTraderCount || 0), 0) || 0} unique traders</div>
               </div>
             </div>
 
@@ -164,9 +164,9 @@ export default function OnchainScreener() {
                 📝 MonaScribe Activity
               </h3>
               <div style={{ fontSize: '14px', color: '#4b5563' }}>
-                <div>— {rows?.insights?.activeSubscribers || 0} active subscribers tracked</div>
-                <div>— {rows?.insights?.newSubscriptions || 0} new subscriptions this week</div>
-                <div>— {rows?.insights?.totalRevenue ? `$${rows.insights.totalRevenue.toLocaleString()}` : '$0'} total revenue</div>
+                <div>— {summary?.activeUsers || 0} active subscribers tracked</div>
+                <div>— {rows?.planPopularity?.length || 0} new subscriptions this week</div>
+                <div>— $0 total revenue</div>
               </div>
             </div>
 
@@ -189,14 +189,14 @@ export default function OnchainScreener() {
                   
                   <div style={{ padding: 16, border: '1px solid #e5e7eb', borderRadius: 12, background: '#ffffff' }}>
                     <div style={{ fontWeight: 'bold', marginBottom: 8, color: '#1f2937' }}>Active Users</div>
-                    <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#7c3aed' }}>{rows.networkInfo.activeAddresses}</div>
+                    <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#7c3aed' }}>{summary?.activeUsers || 0}</div>
                     <div style={{ fontSize: '12px', color: '#6b7280', marginTop: 4 }}>Growth: {rows.networkInfo.weeklyGrowth}</div>
                   </div>
                   
                   <div style={{ padding: 16, border: '1px solid #e5e7eb', borderRadius: 12, background: '#ffffff' }}>
                     <div style={{ fontWeight: 'bold', marginBottom: 8, color: '#1f2937' }}>Smart Accounts</div>
-                    <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#059669' }}>{rows.networkInfo.smartAccounts}</div>
-                    <div style={{ fontSize: '12px', color: '#6b7280', marginTop: 4 }}>Subscriptions: {rows.networkInfo.subscriptions}</div>
+                    <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#059669' }}>{summary?.activeUsers || 0}</div>
+                    <div style={{ fontSize: '12px', color: '#6b7280', marginTop: 4 }}>Subscriptions: {summary?.activeUsers || 0}</div>
                   </div>
                 </div>
                 
@@ -238,23 +238,23 @@ export default function OnchainScreener() {
                   📊 Market Context
                 </h3>
                 <div style={{ fontSize: '14px', color: '#4b5563' }}>
-                  <div>DeFi TVL: <strong>${rows.marketIntelligence.defiMetrics?.totalValueLocked?.toLocaleString() || 'N/A'}</strong></div>
-                  <div>Market Sentiment: <strong>{rows.marketIntelligence.marketSentiment?.overall || 'N/A'}</strong></div>
-                  <div>Active Whales: <strong>{rows.marketIntelligence.whaleIntelligence?.activeWhales || 0}</strong></div>
+                  <div>DeFi TVL: <strong>${summary?.defiTvl?.toLocaleString() || '0'}</strong></div>
+                  <div>Market Sentiment: <strong>{summary?.marketSentiment || 'N/A'}</strong></div>
+                  <div>Active Whales: <strong>{summary?.whaleCount || 0}</strong></div>
                 </div>
               </div>
             )}
           </div>
 
           {/* Insights Section */}
-          {rows?.insights?.topInsights?.length > 0 && (
+          {rows?.insights?.length > 0 && (
             <div style={{ marginTop: 20 }}>
               <h3 style={{ marginBottom: 16, color: '#111827' }}>💡 Key Market Insights</h3>
               <div style={{ padding: 16, border: '1px solid #e5e7eb', borderRadius: 12, background: '#ffffff' }}>
-                {rows.insights.topInsights.map((insight: string, index: number) => (
+                {rows.insights.slice(0, 5).map((insight: string, index: number) => (
                   <div key={index} style={{ 
                     padding: '8px 0', 
-                    borderBottom: index < rows.insights.topInsights.length - 1 ? '1px solid #f3f4f6' : 'none',
+                    borderBottom: index < Math.min(rows.insights.length, 5) - 1 ? '1px solid #f3f4f6' : 'none',
                     fontSize: '14px',
                     color: '#374151'
                   }}>

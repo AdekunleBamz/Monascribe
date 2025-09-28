@@ -15,7 +15,7 @@ function getEnv(key: string): string | undefined {
 export async function getSubscriptionStatusIndexed(subscriber: `0x${string}`): Promise<IndexedSubscriptionStatus | null> {
   try {
     // Skip GraphQL request during Next.js compilation phase
-    if (process.env.NODE_ENV === 'development' && !process.env.NEXT_PHASE) {
+    if (process.env.NODE_ENV === 'development' && !process.env.NEXT_PHASE && process.env.NEXT_PUBLIC_SKIP_GRAPHQL !== 'true') {
       console.log('⏭️ Skipping GraphQL request during compilation phase in getSubscriptionStatusIndexed')
       return null
     }

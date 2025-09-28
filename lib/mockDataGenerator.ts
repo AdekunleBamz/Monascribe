@@ -1,5 +1,6 @@
-// Enhanced mock data generator for realistic smart money and market activity
-// Creates compelling demo data for Alpha and Screener features
+// Mock data generator - DEPRECATED
+// This file is no longer used as the app now uses only real on-chain data
+// Kept for reference but should not be imported or used
 
 interface MockSmartMoneyWallet {
   address: string;
@@ -434,6 +435,8 @@ class MockDataGenerator {
   }
 }
 
+// DEPRECATED: This mock data generator is no longer used
+// The app now uses only real on-chain data from Envio and MongoDB
 export const mockDataGenerator = new MockDataGenerator();
 export type { MockSmartMoneyWallet, MockDEXTrade, MockMarketIntelligence };
 

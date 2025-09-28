@@ -73,10 +73,10 @@ class MonadMetricsService {
       return this.cache;
 
     } catch (error) {
-      console.error('Failed to fetch Monad metrics, using fallback data:', error);
+      console.error('Failed to fetch Monad metrics:', error);
       
-      // Return realistic fallback data when RPC fails
-      return this.getFallbackMetrics();
+      // Return minimal data structure when RPC fails
+      return this.getMinimalMetrics();
     }
   }
 
@@ -167,7 +167,13 @@ class MonadMetricsService {
 
   private calculateNetworkStats(blocks: any[]) {
     if (blocks.length < 2) {
-      return this.getFallbackNetworkStats();
+      return {
+        tps: 0,
+        utilization: 0,
+        avgBlockTime: 0,
+        activeValidators: 0,
+        totalSupply: "0"
+      };
     }
 
     // Calculate TPS based on recent blocks
@@ -192,8 +198,8 @@ class MonadMetricsService {
       tps: Math.round(tps * 100) / 100,
       utilization: Math.round(utilization * 10) / 10,
       avgBlockTime: Math.round(avgBlockTime * 10) / 10,
-      activeValidators: 150 + Math.floor(Math.random() * 50), // Estimated
-      totalSupply: "1000000000" // 1B MON estimate
+      activeValidators: 0, // Will be populated from real data when available
+      totalSupply: "0" // Will be populated from real data when available
     };
   }
 
@@ -213,46 +219,36 @@ class MonadMetricsService {
     };
   }
 
-  private getFallbackMetrics(): MonadNetworkMetrics {
+  private getMinimalMetrics(): MonadNetworkMetrics {
     const now = Math.floor(Date.now() / 1000);
-    const blockNumber = 2500000 + Math.floor(Math.random() * 1000);
 
     return {
       latestBlock: {
-        number: blockNumber,
-        hash: `0x${Math.random().toString(16).substr(2, 64)}`,
+        number: 0,
+        hash: "0x0000000000000000000000000000000000000000000000000000000000000000",
         timestamp: now,
-        gasUsed: "8500000",
+        gasUsed: "0",
         gasLimit: "30000000",
-        transactionCount: 25 + Math.floor(Math.random() * 50)
+        transactionCount: 0
       },
       gasPrice: {
-        current: "0.15",
-        fast: "0.18",
-        standard: "0.15",
-        safe: "0.12"
+        current: "0",
+        fast: "0",
+        standard: "0",
+        safe: "0"
       },
-      networkStats: this.getFallbackNetworkStats(),
+      networkStats: {
+        tps: 0,
+        utilization: 0,
+        avgBlockTime: 0,
+        activeValidators: 0,
+        totalSupply: "0"
+      },
       recentActivity: {
-        blocks: Array.from({ length: 10 }, (_, i) => ({
-          number: blockNumber - i,
-          txCount: 20 + Math.floor(Math.random() * 40),
-          gasUsed: (7000000 + Math.random() * 5000000).toString(),
-          timestamp: now - (i * 1.2) // ~1.2s block time
-        })),
-        avgTps24h: 45.7,
-        peakTps24h: 127.3
+        blocks: [],
+        avgTps24h: 0,
+        peakTps24h: 0
       }
-    };
-  }
-
-  private getFallbackNetworkStats() {
-    return {
-      tps: 45.7 + Math.random() * 10,
-      utilization: 28.5 + Math.random() * 15,
-      avgBlockTime: 1.1 + Math.random() * 0.3,
-      activeValidators: 175,
-      totalSupply: "1000000000"
     };
   }
 
