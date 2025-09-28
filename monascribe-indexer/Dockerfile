@@ -14,6 +14,7 @@ ENV HASURA_GRAPHQL_ADMIN_SECRET=testing
 ENV ENVIO_INDEXER_PORT=4000
 ENV NODE_ENV=production
 ENV ENVIO_HASURA=true
+ENV TUI_OFF=true
 
 # PostgreSQL configuration
 ENV ENVIO_PG_HOST=localhost
@@ -44,5 +45,5 @@ RUN pnpm codegen && pnpm build
 # Expose port
 EXPOSE 4000
 
-# Start the indexer
-CMD ["pnpm", "start"]
+# Start the indexer with TUI disabled for production
+CMD ["sh", "-c", "TUI_OFF=true pnpm start"]
