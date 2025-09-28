@@ -57,10 +57,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Enhance analytics with market data
     if (marketData) {
       console.log('💰 Enhancing analytics with market data')
-      analytics.summary.marketSentiment = calculateMarketSentiment(marketData)
-      analytics.summary.bitcoinPrice = marketData.bitcoin?.usd || 0
-      analytics.summary.ethereumPrice = marketData.ethereum?.usd || 0
-      analytics.summary.marketCap = (marketData.bitcoin?.usd_market_cap || 0) + (marketData.ethereum?.usd_market_cap || 0)
+      // Add market data to the analytics summary
+      analytics.summary = {
+        ...analytics.summary,
+        marketSentiment: calculateMarketSentiment(marketData),
+        bitcoinPrice: marketData.bitcoin?.usd || 0,
+        ethereumPrice: marketData.ethereum?.usd || 0,
+        marketCap: (marketData.bitcoin?.usd_market_cap || 0) + (marketData.ethereum?.usd_market_cap || 0)
+      }
       console.log('📈 Updated analytics summary:', {
         bitcoinPrice: analytics.summary.bitcoinPrice,
         ethereumPrice: analytics.summary.ethereumPrice,
