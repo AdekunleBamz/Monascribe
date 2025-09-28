@@ -30,6 +30,10 @@ ENV ENVIO_THROTTLE_PRUNE_STALE_DATA_INTERVAL_MILLIS=1000
 ENV ENVIO_THROTTLE_LIVE_METRICS_BENCHMARK_INTERVAL_MILLIS=2000
 ENV ENVIO_THROTTLE_JSON_FILE_BENCHMARK_INTERVAL_MILLIS=5000
 
+# MongoDB configuration
+ENV MONGODB_URI=mongodb+srv://adebamzzw1_db_user:GSZXxpbNIdVjZSQc@cluster0.fbquz94.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0
+ENV MONGODB_DB=monascribe_analytics
+
 # Copy package files
 COPY package.json pnpm-lock.yaml ./
 

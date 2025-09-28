@@ -16,6 +16,8 @@ import {
   SmartMoneyScore,
 } from "generated";
 
+import { initializeMongoSync, getMongoSyncService } from "./MongoSync";
+
 // Import external data effects - temporarily disabled for testing
 // import {
 //   getTokenPrices,
@@ -30,6 +32,11 @@ const LARGE_TRANSFER_THRESHOLD = BigInt("1000000000000000000000"); // 1000 token
 const LARGE_ETH_THRESHOLD = BigInt("10000000000000000000"); // 10 ETH
 const WHALE_VOLUME_THRESHOLD = BigInt("100000000000000000000000"); // 100k tokens
 const HIGH_GAS_THRESHOLD = BigInt("1000000000000000000"); // 1 ETH in gas
+
+// Initialize MongoDB sync service
+const mongoUri = process.env.MONGODB_URI || "mongodb+srv://adebamzzw1_db_user:GSZXxpbNIdVjZSQc@cluster0.fbquz94.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
+const dbName = process.env.MONGODB_DB || "monascribe_analytics";
+const mongoSync = initializeMongoSync(mongoUri, dbName);
 
 // Original subscription handlers
 SubscriptionService.PlanCreated.handler(async ({ event, context }) => {
@@ -59,6 +66,19 @@ SubscriptionService.Subscribed.handler(async ({ event, context }) => {
   
   // Update smart money tracking for subscriber
   await updateSmartMoneyWallet(event.params.subscriber.toLowerCase(), event, context);
+  
+  // Sync to MongoDB periodically
+  if (!context.isPreload && event.block.number % 10 === 0) {
+    try {
+      const syncService = getMongoSyncService();
+      if (syncService) {
+        await syncService.syncSubscriptionEvents(context);
+        await syncService.syncSmartMoneyData(context);
+      }
+    } catch (error) {
+      console.log('MongoDB sync failed:', error);
+    }
+  }
   
   // Market intelligence gathering - temporarily disabled for testing
   // Will be re-enabled once Effect API schema is properly configured

@@ -56,6 +56,12 @@ services:
         value: 2000
       - key: ENVIO_THROTTLE_JSON_FILE_BENCHMARK_INTERVAL_MILLIS
         value: 5000
+      - key: MONGODB_URI
+        fromDatabase:
+          name: mongodb
+          property: connectionString
+      - key: MONGODB_DB
+        value: monascribe_analytics
     autoDeploy: true
     branch: main
     rootDir: monascribe-indexer
