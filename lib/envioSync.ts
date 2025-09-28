@@ -35,14 +35,14 @@ async function generateRealAlphaContent(issueNumber: number, analytics: any): Pr
     },
     smartMoneyInsights: {
       behaviorPatterns: {
-        whales: analytics.whaleCount,
-        active: analytics.totalActiveUsers - analytics.whaleCount,
+        whales: analytics.whaleCount || 0,
+        active: (analytics.totalActiveUsers || 0) - (analytics.whaleCount || 0),
         subscribers: analytics.planPopularity?.length || 0
       },
       weeklyFlow: {
-        netInflow: analytics.totalVolume,
-        largestTrade: Math.max(...(analytics.dexActivity.map((d: any) => d.totalVolumeIn) || [0])),
-        activeTraders: analytics.totalActiveUsers
+        netInflow: analytics.totalVolume || 0,
+        largestTrade: Math.max(...(analytics.dexActivity?.map((d: any) => d.totalVolumeIn) || [0])),
+        activeTraders: analytics.totalActiveUsers || 0
       }
     },
     technicalAnalysis: {
