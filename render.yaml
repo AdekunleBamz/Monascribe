@@ -24,6 +24,28 @@ services:
         value: testing
       - key: ENVIO_HASURA
         value: true
+      # PostgreSQL configuration
+      - key: ENVIO_PG_HOST
+        value: localhost
+      - key: ENVIO_PG_PORT
+        value: 5433
+      - key: ENVIO_PG_USER
+        value: postgres
+      - key: ENVIO_PG_PASSWORD
+        value: testing
+      - key: ENVIO_PG_DATABASE
+        value: envio-dev
+      - key: ENVIO_PG_SSL_MODE
+        value: disable
+      # Throttle configuration
+      - key: ENVIO_THROTTLE_CHAIN_METADATA_INTERVAL_MILLIS
+        value: 500
+      - key: ENVIO_THROTTLE_PRUNE_STALE_DATA_INTERVAL_MILLIS
+        value: 1000
+      - key: ENVIO_THROTTLE_LIVE_METRICS_BENCHMARK_INTERVAL_MILLIS
+        value: 2000
+      - key: ENVIO_THROTTLE_JSON_FILE_BENCHMARK_INTERVAL_MILLIS
+        value: 5000
     healthCheckPath: /graphql
     autoDeploy: true
     branch: main
