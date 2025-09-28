@@ -18,9 +18,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Test analytics generation
     const analytics = await generateSmartMoneyAnalytics()
     console.log('Analytics generated, summary:', {
-      whaleCount: analytics.summary.whaleCount,
-      smartMoneyFlow: analytics.summary.smartMoneyFlow,
-      insightsCount: analytics.insights.length
+      whaleCount: analytics.summary?.whaleCount || 0,
+      smartMoneyFlow: analytics.summary?.smartMoneyFlow || '$0',
+      insightsCount: analytics.insights?.length || 0
     })
     
     return res.status(200).json({
@@ -28,10 +28,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       mongodb: 'connected',
       syncResult,
       analytics: {
-        whaleCount: analytics.summary.whaleCount,
-        smartMoneyFlow: analytics.summary.smartMoneyFlow,
-        insightsCount: analytics.insights.length,
-        hasData: analytics.tokenFlows.length > 0
+        whaleCount: analytics.summary?.whaleCount || 0,
+        smartMoneyFlow: analytics.summary?.smartMoneyFlow || '$0',
+        insightsCount: analytics.insights?.length || 0,
+        hasData: (analytics.tokenFlows?.length || 0) > 0
       }
     })
   } catch (error: any) {
