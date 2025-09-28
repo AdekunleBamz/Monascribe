@@ -47,6 +47,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Get market data for better insights
     const { getLatestMarketData } = await import('../../lib/coingecko')
     const marketData = await getLatestMarketData()
+    console.log('📊 Market data in screener:', marketData ? 'Found' : 'Not found')
     
     // Generate comprehensive market intelligence
     const { generateMarketIntelligence, generateMarketInsights } = await import('../../lib/externalAnalytics')
@@ -55,10 +56,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     
     // Enhance analytics with market data
     if (marketData) {
+      console.log('💰 Enhancing analytics with market data')
       analytics.summary.marketSentiment = calculateMarketSentiment(marketData)
       analytics.summary.bitcoinPrice = marketData.bitcoin?.usd || 0
       analytics.summary.ethereumPrice = marketData.ethereum?.usd || 0
       analytics.summary.marketCap = (marketData.bitcoin?.usd_market_cap || 0) + (marketData.ethereum?.usd_market_cap || 0)
+      console.log('📈 Updated analytics summary:', {
+        bitcoinPrice: analytics.summary.bitcoinPrice,
+        ethereumPrice: analytics.summary.ethereumPrice,
+        marketCap: analytics.summary.marketCap
+      })
+    } else {
+      console.log('⚠️ No market data available for analytics enhancement')
     }
 
     // Transform to screener format with enhanced smart money data and market intelligence
