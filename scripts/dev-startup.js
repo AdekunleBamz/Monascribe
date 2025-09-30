@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 
 const { spawn } = require('child_process');
+const fs = require('fs');
+const path = require('path');
 const { MongoClient } = require('mongodb');
 const http = require('http');
 const url = require('url');
@@ -78,16 +80,24 @@ async function checkEnvio() {
   });
 }
 
+// Check function for Cron Job
+async function checkCronJob() {
+  const pidFile = path.join(__dirname, 'cron.pid');
+  return fs.existsSync(pidFile);
+}
+
 async function main() {
   console.log('🔍 Checking service connections...\n');
 
   const mongoOk = await waitForService('MongoDB', checkMongoDB);
   const envioOk = await waitForService('Envio GraphQL', checkEnvio);
+  const cronOk = await checkCronJob();
 
   console.log('\n📊 Service Status:');
   console.log('==================');
   console.log(`🗄️  Database: ${mongoOk ? 'Online' : 'Offline'}`);
   console.log(`📊 Indexer:  ${envioOk ? 'Online' : 'Offline'}`);
+  console.log(`⏰ Cron Job: ${cronOk ? 'Running' : 'Stopped'}`);
   console.log('==================\n');
 
   if (!mongoOk || !envioOk) {

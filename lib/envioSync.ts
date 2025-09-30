@@ -14,7 +14,7 @@ import { monadMetrics, type MonadNetworkMetrics } from './monadMetrics'
 // Removed mock data generator import - using only real on-chain data
 
 // Skip GraphQL - indexer syncs directly to MongoDB in production
-const ENVIO_GRAPHQL_URL = process.env.NEXT_PUBLIC_APP_ENV === 'production' ? null : '/api/graphql'
+const ENVIO_GRAPHQL_URL = process.env.NEXT_PUBLIC_APP_ENV === 'production' ? null : null
 
 // Generate real alpha content using only on-chain data
 async function generateRealAlphaContent(issueNumber: number, analytics: any): Promise<any> {

@@ -59,7 +59,7 @@ export async function fetchCoinDetails(coinId: string): Promise<MarketData | nul
       throw new Error(`CoinGecko API error: ${response.status}`)
     }
     
-    const data = await response.json()
+    const data = await response.json() as any
     
     return {
       id: data.id,
@@ -91,7 +91,7 @@ export async function fetchTrendingCoins(): Promise<TrendingCoin[]> {
       throw new Error(`CoinGecko API error: ${response.status}`)
     }
     
-    const data = await response.json()
+    const data = await response.json() as any
     return data.coins?.map((coin: any) => ({
       id: coin.item.id,
       name: coin.item.name,
@@ -203,7 +203,7 @@ export async function getTop10Coins(): Promise<MarketData[]> {
       throw new Error(`CoinGecko API error: ${response.status}`)
     }
     
-    const data = await response.json()
+    const data = await response.json() as any
     
     return data.map((coin: any) => ({
       id: coin.id,
@@ -236,7 +236,7 @@ export async function searchCoins(query: string): Promise<MarketData[]> {
       throw new Error(`CoinGecko API error: ${response.status}`)
     }
     
-    const data = await response.json()
+    const data = await response.json() as any
     
     // Get details for each coin
     const coinDetails = await Promise.all(

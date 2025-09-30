@@ -14,7 +14,7 @@ export async function getDb(): Promise<any> {
   const { MongoClient } = await import('mongodb')
   
   const uri = process.env.MONGODB_URI || 'mongodb://localhost:27017'
-  const dbName = process.env.MONGODB_DB || 'monascribe_analytics'
+  const dbName = process.env.MONGODB_DB || 'monascribe'
   
   try {
     client = new MongoClient(uri, {
@@ -41,5 +41,3 @@ export async function closeDb(): Promise<void> {
     db = null
   }
 }
-
-
