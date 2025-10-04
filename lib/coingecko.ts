@@ -31,20 +31,39 @@ export interface TrendingCoin {
 }
 
 // Fetch market data for multiple coins
-export async function fetchMarketData(ids: string[] = ['bitcoin', 'ethereum', 'monad']): Promise<Record<string, any>> {
+export async function fetchMarketData(ids?: string[]): Promise<Record<string, any>> {
   try {
-    const response = await fetch(
-      `https://api.coingecko.com/api/v3/simple/price?ids=${ids.join(',')}&vs_currencies=usd&include_market_cap=true&include_24hr_change=true&include_24hr_vol=true&include_last_updated_at=true`
-    )
+    let url = 'https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=100&page=1&sparkline=false';
+    if (ids && ids.length > 0) {
+      url = `https://api.coingecko.com/api/v3/simple/price?ids=${ids.join(',')}&vs_currencies=usd&include_market_cap=true&include_24hr_change=true&include_24hr_vol=true&include_last_updated_at=true`;
+    }
+
+    const response = await fetch(url);
     
     if (!response.ok) {
-      throw new Error(`CoinGecko API error: ${response.status}`)
+      throw new Error(`CoinGecko API error: ${response.status}`);
     }
     
-    return await response.json()
+    const data = await response.json();
+
+    // Normalize the data to a consistent format
+    if (Array.isArray(data)) {
+      return data.reduce((acc, coin) => {
+        acc[coin.id] = {
+          usd: coin.current_price,
+          usd_market_cap: coin.market_cap,
+          usd_24h_vol: coin.total_volume,
+          usd_24h_change: coin.price_change_percentage_24h,
+          last_updated_at: Math.floor(new Date(coin.last_updated).getTime() / 1000),
+        };
+        return acc;
+      }, {});
+    }
+    
+    return data;
   } catch (error) {
-    console.error('Failed to fetch market data:', error)
-    throw error
+    console.error('Failed to fetch market data:', error);
+    throw error;
   }
 }
 
@@ -159,7 +178,46 @@ export async function getLatestMarketData(): Promise<Record<string, any> | null>
       { sort: { createdAt: -1 } }
     )
     
-    return latest?.data || null
+    if (latest?.data) return latest.data
+
+    // Fallback to cron cache written by scripts/fetch-market.js (CoinGecko array)
+    const cache = await db.collection('screener_cache').findOne({ key: 'market_latest' }, { sort: { ts: -1 } })
+    const data = cache?.data
+    if (Array.isArray(data)) {
+      const indexById = (id: string) => data.find((c: any) => c?.id === id)
+      const btc = indexById('bitcoin')
+      const eth = indexById('ethereum')
+      const mon = indexById('monad')
+      const normalized: Record<string, any> = {}
+      if (btc) normalized.bitcoin = {
+        usd: btc.current_price,
+        usd_market_cap: btc.market_cap,
+        usd_24h_vol: btc.total_volume,
+        usd_24h_change: btc.price_change_percentage_24h,
+        last_updated_at: Math.floor(new Date(btc.last_updated).getTime() / 1000),
+      }
+      if (eth) normalized.ethereum = {
+        usd: eth.current_price,
+        usd_market_cap: eth.market_cap,
+        usd_24h_vol: eth.total_volume,
+        usd_24h_change: eth.price_change_percentage_24h,
+        last_updated_at: Math.floor(new Date(eth.last_updated).getTime() / 1000),
+      }
+      if (mon) normalized.monad = {
+        usd: mon.current_price,
+        usd_market_cap: mon.market_cap,
+        usd_24h_vol: mon.total_volume,
+        usd_24h_change: mon.price_change_percentage_24h,
+        last_updated_at: Math.floor(new Date(mon.last_updated).getTime() / 1000),
+      }
+      // Persist a normalized entry into market_data for future reads
+      if (Object.keys(normalized).length > 0) {
+        await db.collection('market_data').insertOne({ data: normalized, createdAt: new Date(), type: 'market_data' })
+        return normalized
+      }
+    }
+    
+    return null
   } catch (error) {
     console.error('❌ Failed to get latest market data:', error)
     return null
@@ -251,4 +309,3 @@ export async function searchCoins(query: string): Promise<MarketData[]> {
     return []
   }
 }
-

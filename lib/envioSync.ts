@@ -24,7 +24,7 @@ async function generateRealAlphaContent(issueNumber: number, analytics: any): Pr
       keyTakeaways: [
         `${analytics.whaleCount} whale wallets actively trading`,
         `$${(analytics.totalVolume / 1000000).toFixed(1)}M in smart money flow`,
-        `Network TPS: ${analytics.networkMetrics.tps.toFixed(1)}`,
+        `Network TPS: ${analytics.networkMetrics.networkStats.tps.toFixed(1)}`,
         `Gas efficiency: ${analytics.networkMetrics.gasPrice.current} gwei average`
       ],
       riskFactors: [
@@ -607,7 +607,7 @@ export async function generateSmartMoneyAnalytics(): Promise<any> {
 
     return {
       timestamp: Date.now(),
-      networkMetrics: formattedMetrics,
+      networkMetrics: networkMetrics,
       insights,
       topSmartMoney,
       largeTransfers,
@@ -749,7 +749,7 @@ export async function generateWeeklyAlpha(issueNumber: number): Promise<any> {
         <ul>
           <li><strong>New Subscriptions:</strong> ${thisWeek} (${growthRate}% vs last week)</li>
           <li><strong>Smart Money Activity:</strong> ${analytics.whaleCount} whale wallets tracked</li>
-          <li><strong>Network TPS:</strong> ${analytics.networkMetrics.tps.toFixed(1)}</li>
+          <li><strong>Network TPS:</strong> ${analytics.networkMetrics.networkStats.tps.toFixed(1)}</li>
           <li><strong>Gas Price:</strong> ${analytics.networkMetrics.gasPrice.current} gwei</li>
         </ul>
       </div>
@@ -786,9 +786,9 @@ export async function generateWeeklyAlpha(issueNumber: number): Promise<any> {
 
       <h3>📰 Network Performance & Trends</h3>
       <ul>
-        <li><strong>Network Utilization:</strong> ${(analytics.networkMetrics.utilization * 100).toFixed(1)}%</li>
-        <li><strong>Active Addresses 24h:</strong> ${analytics.networkMetrics.activeAddresses.last24h.toLocaleString()}</li>
-        <li><strong>Block Time:</strong> ${analytics.networkMetrics.avgBlockTime.toFixed(2)}s average</li>
+        <li><strong>Network Utilization:</strong> ${analytics.networkMetrics.networkStats.utilization.toFixed(1)}%</li>
+        <li><strong>Active Validators:</strong> ${analytics.networkMetrics.networkStats.activeValidators.toLocaleString()}</li>
+        <li><strong>Block Time:</strong> ${analytics.networkMetrics.networkStats.avgBlockTime.toFixed(2)}s average</li>
       </ul>
       
       <h3>🏗️ DeFi Infrastructure Update</h3>
@@ -813,9 +813,9 @@ export async function generateWeeklyAlpha(issueNumber: number): Promise<any> {
       growthRate: growthRate,
       whaleAlertLevel: analytics.whaleCount > 10 ? 'high' : analytics.whaleCount > 5 ? 'medium' : 'low',
       riskLevel: 'medium', // Default risk level
-      networkTPS: analytics.networkMetrics.tps,
+      networkTPS: analytics.networkMetrics.networkStats.tps,
       gasPrice: parseFloat(analytics.networkMetrics.gasPrice.current),
-      networkUtilization: analytics.networkMetrics.utilization
+      networkUtilization: analytics.networkMetrics.networkStats.utilization
     }
     
     // Store in MongoDB

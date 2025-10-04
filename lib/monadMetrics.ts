@@ -95,6 +95,10 @@ class MonadMetricsService {
     const data = await response.json();
     const block = data.result;
 
+    if (!block) {
+      throw new Error('Failed to fetch latest block from RPC');
+    }
+
     return {
       number: parseInt(block.number, 16),
       hash: block.hash,
@@ -151,12 +155,14 @@ class MonadMetricsService {
         const data = await response.json();
         const block = data.result;
 
-        blocks.push({
-          number: parseInt(block.number, 16),
-          txCount: block.transactions.length,
-          gasUsed: parseInt(block.gasUsed, 16).toString(),
-          timestamp: parseInt(block.timestamp, 16)
-        });
+        if (block) {
+          blocks.push({
+            number: parseInt(block.number, 16),
+            txCount: block.transactions.length,
+            gasUsed: parseInt(block.gasUsed, 16).toString(),
+            timestamp: parseInt(block.timestamp, 16)
+          });
+        }
       } catch (error) {
         console.warn(`Failed to fetch block ${latest.number - i}:`, error);
       }
@@ -282,4 +288,3 @@ class MonadMetricsService {
 
 export const monadMetrics = new MonadMetricsService();
 export type { MonadNetworkMetrics };
-

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import WalletModal from './WalletModal'
-import { WalletConnector } from '../lib/walletConfig'
+import { WalletConnector, promptAccountSelection } from '../lib/walletConfig'
 
 interface ConnectedAccount {
   address: string
@@ -87,8 +87,29 @@ export default function ConnectButton({
               <span>🔍 View on Explorer</span>
             </button>
             <div className="menu-divider" />
-            <button className="menu-item menu-button disconnect" onClick={() => {
+            <button className="menu-item menu-button" onClick={async () => {
+              try {
+                await (window as any).ethereum?.request({ method: 'eth_requestAccounts', params: [] })
+              } catch {}
+              try {
+                await (window as any).ethereum?.request({ method: 'wallet_requestPermissions', params: [{ eth_accounts: {} }] })
+              } catch {}
+              try {
+                await promptAccountSelection()
+              } catch {}
+              setShowAccountMenu(false)
+            }}>
+              <span>🔁 Switch Account</span>
+            </button>
+            <button className="menu-item menu-button disconnect" onClick={async () => {
               onDisconnect()
+              try {
+                // Clear any dapp-side cached selection
+                if (typeof localStorage !== 'undefined') {
+                  localStorage.removeItem('wagmi.store')
+                  localStorage.removeItem('web3modal.selectedWallet')
+                }
+              } catch {}
               setShowAccountMenu(false)
             }}>
               <span>🚪 Disconnect</span>

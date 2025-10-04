@@ -159,10 +159,16 @@ export async function connectWallet(walletId: string) {
   }
   
   try {
-    // Request account access with user approval
-    const accounts = await (window as any).ethereum.request({
-      method: 'eth_requestAccounts'
-    })
+    // Force a fresh permission prompt so user can switch accounts
+    try {
+      await (window as any).ethereum.request({
+        method: 'wallet_requestPermissions',
+        params: [{ eth_accounts: {} }]
+      })
+    } catch {}
+    
+    // Request account access (will reuse selection from permissions prompt)
+    const accounts = await (window as any).ethereum.request({ method: 'eth_requestAccounts' })
     
     if (!accounts || accounts.length === 0) {
       throw new WalletConnectionError('No accounts found. Please connect your wallet.', 'NO_ACCOUNTS')
@@ -214,4 +220,19 @@ async function ensureMonadNetwork() {
       throw new WalletConnectionError('Failed to switch to Monad Testnet', 'NETWORK_SWITCH_FAILED')
     }
   }
+}
+
+// Explicitly prompt account selection without connecting stateful UI
+export async function promptAccountSelection(): Promise<string[]> {
+  if (typeof window === 'undefined' || !(window as any).ethereum) {
+    throw new WalletConnectionError('MetaMask not detected. Please install MetaMask.', 'METAMASK_NOT_FOUND')
+  }
+  try {
+    await (window as any).ethereum.request({
+      method: 'wallet_requestPermissions',
+      params: [{ eth_accounts: {} }]
+    })
+  } catch {}
+  const accounts = await (window as any).ethereum.request({ method: 'eth_requestAccounts' })
+  return accounts || []
 }
