@@ -1,9 +1,14 @@
-const connectDB = require('../../lib/db');
+const { MongoClient } = require('mongodb');
 const { fetchTrendingFromCoingecko, fetchEnvioMetrics } = require('../../lib/fetchers');
+
+const MONGO_URI = process.env.MONGODB_URI;
+const DBNAME = process.env.MONGODB_DB || 'monascribe';
 
 export default async function handler(req, res) {
   try {
-    await connectDB();
+    const client = new MongoClient(MONGO_URI);
+    await client.connect();
+    const db = client.db(DBNAME);
 
     const [market, onchain] = await Promise.all([
       fetchTrendingFromCoingecko(),
@@ -11,8 +16,7 @@ export default async function handler(req, res) {
     ]);
 
     // Get latest subscription data for context
-    const mongoose = require('mongoose');
-    const latestSubs = await mongoose.connection
+    const latestSubs = await db
       .collection("subscription_events")
       .find({ type: 'subscribed' })
       .sort({ timestamp: -1 })
@@ -30,6 +34,8 @@ export default async function handler(req, res) {
       },
       subscriptionCount: latestSubs.length
     }));
+
+    await client.close();
 
     return res.status(200).json({
       status: "ok",

@@ -1,8 +1,22 @@
-const { getSubscriptionData } = require('../../lib/fetchers');
+const { MongoClient } = require('mongodb');
+
+const MONGO_URI = process.env.MONGODB_URI;
+const DBNAME = process.env.MONGODB_DB || 'monascribe';
 
 export default async function handler(req, res) {
   try {
-    const subs = await getSubscriptionData();
+    const client = new MongoClient(MONGO_URI);
+    await client.connect();
+    const db = client.db(DBNAME);
+
+    const subs = await db
+      .collection("subscription_events")
+      .find({})
+      .sort({ timestamp: -1 })
+      .limit(5)
+      .toArray();
+
+    await client.close();
 
     return res.status(200).json({
       status: "ok",
