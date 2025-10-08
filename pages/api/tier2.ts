@@ -1,6 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { getDb } from '../../lib/db';
-import { fetchOnchainMetrics, getFromMongo } from '../../lib/fetchers';
+import { getUserTierFromMongo } from '../../lib/subscription';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
@@ -13,24 +13,24 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const db = await getDb();
 
-    // Get on-chain metrics for the user
-    const onchainData = await fetchOnchainMetrics(address);
-
-    if (!onchainData) {
-      return res.status(403).json({ error: 'No subscription found' });
-    }
-
-    const tier = onchainData.planId;
+    // Check user's subscription tier
+    const tier = await getUserTierFromMongo(address);
 
     if (tier < 2) {
       return res.status(403).json({ error: 'Tier 2 subscription required' });
     }
 
     // Get events data from MongoDB
-    const eventsData = await getFromMongo('events');
+    const eventsData = await db.collection('events').findOne({ type: 'latest' });
 
     // Get market data for additional context
     const marketData = await db.collection('screener_cache').findOne({ key: 'market_latest' });
+
+    // Get latest subscription info for the user
+    const subscriptionInfo = await db.collection('subscription_events').findOne(
+      { subscriber: address.toLowerCase() },
+      { sort: { timestamp: -1 } }
+    );
 
     const response = {
       status: 'success',
@@ -38,7 +38,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       data: {
         events: eventsData?.events || [],
         marketData: marketData?.data || [],
-        onchain: onchainData,
+        subscription: subscriptionInfo,
         timestamp: new Date()
       }
     };

@@ -112,8 +112,8 @@ export default function ScreenerTier3() {
       )}
 
       {error && (
-        <div className="text-center py-8 text-red-500">
-          Error: {error}
+        <div className="text-center py-8 text-red-400">
+          Failed to load data. Please refresh or check your connection.
         </div>
       )}
 

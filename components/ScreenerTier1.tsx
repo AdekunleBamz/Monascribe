@@ -58,9 +58,13 @@ export default function ScreenerTier1() {
     fetchTier1Data();
   }, []);
 
-  if (loading) return <div className="p-6">Loading Tier 1 data...</div>;
-  if (error) return <div className="p-6 text-red-500">Error: {error}</div>;
-  if (!data) return <div className="p-6">No data available</div>;
+  if (loading) return <div className="p-6 text-center">Loading Tier 1 data...</div>;
+  if (error) return (
+    <div className="p-6 text-center text-red-400">
+      Failed to load data. Please refresh or check your connection.
+    </div>
+  );
+  if (!data) return <div className="p-6 text-center">No data available</div>;
 
   return (
     <div className="p-6">

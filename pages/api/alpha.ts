@@ -1,11 +1,14 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { getDb } from '../../lib/db';
-import { fetchOnchainMetrics, getFromMongo } from '../../lib/fetchers';
+import { getUserTierFromMongo } from '../../lib/subscription';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
     const addressParam = req.query.address || req.headers['x-address'];
     const address = (Array.isArray(addressParam) ? addressParam[0] : addressParam || '').toLowerCase();
+
+    console.log('Alpha API - Address param:', addressParam);
+    console.log('Alpha API - Normalized address:', address);
 
     if (!address) {
       return res.status(400).json({ error: 'Address required' });
@@ -13,14 +16,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const db = await getDb();
 
-    // Get on-chain metrics for the user
-    const onchainData = await fetchOnchainMetrics(address);
-
-    if (!onchainData) {
-      return res.status(403).json({ error: 'No subscription found' });
-    }
-
-    const tier = onchainData.planId;
+    // Check user's subscription tier
+    const tier = await getUserTierFromMongo(address);
+    console.log('Alpha API - User tier:', tier);
 
     if (tier < 2) {
       return res.status(403).json({ error: 'Tier 2 subscription required for Alpha' });
@@ -29,7 +27,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Get latest market data for analysis
     const marketData = await db.collection('screener_cache').findOne({ key: 'market_latest' });
     const trendingData = await db.collection('screener_cache').findOne({ key: 'trending_latest' });
-    const eventsData = await getFromMongo('events');
+    const eventsData = await db.collection('events').findOne({ type: 'latest' });
 
     // Compute alpha insights
     const marketArray = Array.isArray(marketData?.data) ? marketData.data : [];
@@ -60,9 +58,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return eventDate > now;
     }) || [];
 
+    // Get latest subscription info for the user
+    const subscriptionInfo = await db.collection('subscription_events').findOne(
+      { subscriber: address.toLowerCase() },
+      { sort: { timestamp: -1 } }
+    );
+
     const alphaSummary = {
       title: `Weekly Alpha #${Math.floor(Date.now() / (7 * 24 * 60 * 60 * 1000))}`,
-      body: `Market analysis for week of ${new Date().toLocaleDateString()}.\n\nKey insights:\n- Market sentiment: ${sentiment}\n- Average 24h change: ${avgChange.toFixed(2)}%\n- Upcoming events: ${upcomingEvents.length}\n- Active subscribers: ${onchainData.subscriber}`,
+      body: `Market analysis for week of ${new Date().toLocaleDateString()}.\n\nKey insights:\n- Market sentiment: ${sentiment}\n- Average 24h change: ${avgChange.toFixed(2)}%\n- Upcoming events: ${upcomingEvents.length}\n- Active subscribers: ${subscriptionInfo?.subscriber || 'N/A'}`,
       marketIntelligence: {
         defiMetrics: {
           totalValueLocked: marketArray.reduce((sum: number, coin: any) => sum + (coin.market_cap || 0), 0),
@@ -95,6 +99,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       topGainers,
       topLosers,
       upcomingEvents: upcomingEvents.slice(0, 5),
+      subscription: subscriptionInfo,
       timestamp: new Date()
     };
 

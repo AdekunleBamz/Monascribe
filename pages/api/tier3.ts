@@ -1,6 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { getDb } from '../../lib/db';
-import { fetchOnchainMetrics } from '../../lib/fetchers';
+import { getUserTierFromMongo } from '../../lib/subscription';
 
 const COINGECKO_BASE = process.env.COINGECKO_BASE || 'https://api.coingecko.com/api/v3';
 
@@ -20,14 +20,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const db = await getDb();
 
-    // Get on-chain metrics for the user
-    const onchainData = await fetchOnchainMetrics(address);
-
-    if (!onchainData) {
-      return res.status(403).json({ error: 'No subscription found' });
-    }
-
-    const tier = onchainData.planId;
+    // Check user's subscription tier
+    const tier = await getUserTierFromMongo(address);
 
     if (tier < 3) {
       return res.status(403).json({ error: 'Tier 3 subscription required' });
@@ -48,6 +42,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (!marketsResp.ok) throw new Error('CoinGecko markets failed ' + marketsResp.status);
     const marketsData = await marketsResp.json();
 
+    // Get latest subscription info for the user
+    const subscriptionInfo = await db.collection('subscription_events').findOne(
+      { subscriber: address.toLowerCase() },
+      { sort: { timestamp: -1 } }
+    );
+
     const response = {
       status: 'success',
       tier: 3,
@@ -64,7 +64,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         total_volume: coin.total_volume
       })),
       query: q,
-      onchain: onchainData,
+      subscription: subscriptionInfo,
       timestamp: new Date()
     };
 

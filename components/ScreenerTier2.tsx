@@ -60,9 +60,13 @@ export default function ScreenerTier2() {
     fetchTier2Data();
   }, []);
 
-  if (loading) return <div className="p-6">Loading Tier 2 data...</div>;
-  if (error) return <div className="p-6 text-red-500">Error: {error}</div>;
-  if (!data) return <div className="p-6">No data available</div>;
+  if (loading) return <div className="p-6 text-center">Loading Tier 2 data...</div>;
+  if (error) return (
+    <div className="p-6 text-center text-red-400">
+      Failed to load data. Please refresh or check your connection.
+    </div>
+  );
+  if (!data) return <div className="p-6 text-center">No data available</div>;
 
   // Separate events by source
   const cmcEvents = data.events.filter((event: Event) => event.source === 'CoinMarketCal');

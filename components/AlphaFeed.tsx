@@ -75,9 +75,13 @@ export default function AlphaFeed() {
     fetchAlphaData();
   }, []);
 
-  if (loading) return <div className="p-6">Loading Alpha data...</div>;
-  if (error) return <div className="p-6 text-red-500">Error: {error}</div>;
-  if (!data) return <div className="p-6">No alpha data available</div>;
+  if (loading) return <div className="p-6 text-center">Loading Alpha data...</div>;
+  if (error) return (
+    <div className="p-6 text-center text-red-400">
+      Failed to load data. Please refresh or check your connection.
+    </div>
+  );
+  if (!data) return <div className="p-6 text-center">No alpha data available</div>;
 
   return (
     <div className="p-6">
